@@ -1,7 +1,9 @@
 # Zipcodes
-A lightweight U.S. zip-code validation package for Python (2 and 3).
+A lightweight U.S. zip-code validation package for Python (2 and 3). This package was built as [zipcode](https://github.com/buckmaxwell/zipcode) provided too much functionality and relied on `sqlite3`, which is not available on platforms such as *AWS Lambda*. While more difficult to add additional zip-codes, this package provides the essential functionality of zip-code validation with fewer dependencies and minimal working logic. 
 
-## Synopsis
+Contributions are welcome!
+
+# Synopsis
 
 Below is the expected usage of this package and a demonstration of supported functionality.
 
