@@ -21,7 +21,7 @@ supported functionality.
 
     >>> from pprint import pprint
     >>> import zipcodes
-
+    >>> # Simple zip-code matching.
     >>> pprint(zipcodes.matching('77429'))
     [{'zip_code': '77429',
       'zip_code_type': 'STANDARD',
@@ -32,7 +32,7 @@ supported functionality.
       'world_region': 'NA',
       'country': 'US',
       'active': True}]
-
+    >>> # Handles of Zip+4 zip-codes nicely. :)
     >>> pprint(zipcodes.matching('77429-1145'))
     [{'zip_code': '77429',
       'zip_code_type': 'STANDARD',
@@ -43,16 +43,29 @@ supported functionality.
       'world_region': 'NA',
       'country': 'US',
       'active': True}]
-
+    >>> # Will try to handle invalid zip-codes gracefully...
     >>> print(zipcodes.matching('06463'))
     []
 
+    >>> # Until it cannot.
+    >>> zipcodes.matching('abc123')
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "/home/sean/Development/Zipcodes/zipcodes/__init__.py", line 30, in <lambda>
+        return lambda zipcode, *args, **kwargs: f(_validate(zipcode), *args, **kwargs)
+      File "/home/sean/Development/Zipcodes/zipcodes/__init__.py", line 181, in _validate
+        'state': 'SC',
+    TypeError: Zipcode may only contain digits and "-".
+
+    >>> # Whether the zip-code exists within the database.
     >>> print(zipcodes.is_valid('06463'))
     False
 
+    >>> # How handy!
     >>> print(zipcodes.is_valid('06469'))
     True
 
+    >>> # Search for zipcodes that begin with a pattern.
     >>> pprint(zipcodes.similar_to('0643'))
     [{'active': True,
       'city': 'GUILFORD',
@@ -75,6 +88,7 @@ supported functionality.
     ... # remaining results truncated for readability...
     ]
 
+    >>> # Use filter_by to filter a list of zip-codes by specific attribute->value pairs.
     >>> pprint(zipcodes.filter_by(zipcodes.list_all(), active=True, city='WINDSOR'))
     [{'active': True,
       'city': 'WINDSOR',
@@ -97,6 +111,7 @@ supported functionality.
     ... # remaining results truncated for readability...
     ]
 
+    >>> # Arbitrary nesting of similar_to and filter_by calls, allowing for great precision while filtering.
     >>> pprint(zipcodes.similar_to('2', zips=zipcodes.filter_by(zipcodes.list_all(), active=True, city='WINDSOR')))
     [{'active': True,
       'city': 'WINDSOR',
@@ -126,5 +141,5 @@ supported functionality.
       'zip_code': '27983',
       'zip_code_type': 'STANDARD'}]
 
-
+    >>> # Have any other ideas? Make a pull request and start contributing today!
 
