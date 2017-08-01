@@ -21,6 +21,7 @@ supported functionality.
 
     >>> from pprint import pprint
     >>> import zipcodes
+
     >>> # Simple zip-code matching.
     >>> pprint(zipcodes.matching('77429'))
     [{'zip_code': '77429',
@@ -32,6 +33,7 @@ supported functionality.
       'world_region': 'NA',
       'country': 'US',
       'active': True}]
+
     >>> # Handles of Zip+4 zip-codes nicely. :)
     >>> pprint(zipcodes.matching('77429-1145'))
     [{'zip_code': '77429',
@@ -43,6 +45,7 @@ supported functionality.
       'world_region': 'NA',
       'country': 'US',
       'active': True}]
+
     >>> # Will try to handle invalid zip-codes gracefully...
     >>> print(zipcodes.matching('06463'))
     []
@@ -142,4 +145,4 @@ supported functionality.
       'zip_code_type': 'STANDARD'}]
 
     >>> # Have any other ideas? Make a pull request and start contributing today!
-
+    >>> # Made with love by Sean Pianka
