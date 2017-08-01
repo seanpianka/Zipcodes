@@ -22,13 +22,13 @@ supported functionality.
     >>> import zipcodes
 
     >>> print(zipcodes.matching('06469'))
-    [{'zip_code': '06469', 'zip_code_type': 'STANDARD', 'city': 'MOODUS', 'state': 'CT', 'world_region': 'NA', 'country': 'US'}]
+    [{'zip_code': '06469', 'zip_code_type': 'STANDARD', 'city': 'MOODUS', 'state': 'CT', 'lat': 41.5, 'long': -72.45, 'world_region': 'NA', 'country': 'US', 'active': True}]
 
     >>> print(zipcodes.matching('06469-1145'))
-    [{'zip_code': '06469', 'zip_code_type': 'STANDARD', 'city': 'MOODUS', 'state': 'CT', 'world_region': 'NA', 'country': 'US'}]
+    [{'zip_code': '06469', 'zip_code_type': 'STANDARD', 'city': 'MOODUS', 'state': 'CT', 'lat': 41.5, 'long': -72.45, 'world_region': 'NA', 'country': 'US', 'active': True}]
 
     >>> print(zipcodes.matching('06463'))
-    None
+    []
 
     >>> print(zipcodes.is_valid('06463'))
     False
@@ -37,5 +37,5 @@ supported functionality.
     True
 
     >>> print(zipcodes.similar_to('0646'))
-    [{'zip_code': '06460', 'zip_code_type': 'STANDARD', 'city': 'MILFORD', 'state': 'CT', 'world_region': 'NA', 'country': 'US'}, {'zip_code': '06461', 'zip_code_type': 'STANDARD', 'city': 'MILFORD', 'state': 'CT', 'world_region': 'NA', 'country': 'US'}, {'zip_code': '06467', 'zip_code_type': 'PO BOX', 'city': 'MILLDALE', 'state': 'CT', 'world_region': 'NA', 'country': 'US'}, {'zip_code': '06468', 'zip_code_type': 'STANDARD', 'city': 'MONROE', 'state': 'CT', 'world_region': 'NA', 'country': 'US'}, {'zip_code': '06469', 'zip_code_type': 'STANDARD', 'city': 'MOODUS', 'state': 'CT', 'world_region': 'NA', 'country': 'US'}]
+    [{'zip_code': '06460', 'zip_code_type': 'STANDARD', 'city': 'MILFORD', 'state': 'CT', 'lat': 41.22, 'long': -73.06, 'world_region': 'NA', 'country': 'US', 'active': True}, {'zip_code': '06461', 'zip_code_type': 'STANDARD', 'city': 'MILFORD', 'state': 'CT', 'lat': 41.23, 'long': -73.08, 'world_region': 'NA', 'country': 'US', 'active': True}, {'zip_code': '06467', 'zip_code_type': 'PO BOX', 'city': 'MILLDALE', 'state': 'CT', 'lat': 41.61, 'long': -72.87, 'world_region': 'NA', 'country': 'US', 'active': True}, {'zip_code': '06468', 'zip_code_type': 'STANDARD', 'city': 'MONROE', 'state': 'CT', 'lat': 41.36, 'long': -73.2, 'world_region': 'NA', 'country': 'US', 'active': True}, {'zip_code': '06469', 'zip_code_type': 'STANDARD', 'city': 'MOODUS', 'state': 'CT', 'lat': 41.5, 'long': -72.45, 'world_region': 'NA', 'country': 'US', 'active': True}]
 

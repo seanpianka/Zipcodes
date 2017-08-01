@@ -9,9 +9,10 @@ Lightweight U.S. zip-code validation package for Python (2 and 3).
 :github: @seanpianka
 
 """
+import gzip
 import json
-import re
 import os
+import re
 
 __author__ = 'Sean Pianka'
 __email__ = 'pianka@eml.cc'
@@ -21,7 +22,7 @@ __version__ = '1.0.0'
 
 _digits = re.compile('[^\d\-]')
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'zips.json')) as f:
+with gzip.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'zips.json.gz'), 'rb') as f:
     zips = json.load(f)
 
 
@@ -60,8 +61,6 @@ def matching(zipcode):
         When the zip-code is not a string or contains characters other than
         digits and "-".
     '''
-    if not any(z['zip_code'] == zipcode for z in zips):
-        return None
     return [z for z in zips if z['zip_code'] == zipcode]
 
 
