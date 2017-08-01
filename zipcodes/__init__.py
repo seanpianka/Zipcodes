@@ -1,6 +1,5 @@
 """
 zipcodes
-postal
 ~~~~~~~~
 
 Lightweight U.S. zip-code validation package for Python (2 and 3).
