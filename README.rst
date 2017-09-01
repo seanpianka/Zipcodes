@@ -11,6 +11,13 @@ validation with fewer dependencies and minimal working logic.
 
 Contributions are welcome!
 
+Installation
+========
+
+.. code:: bash
+    $ pip install zipcodes
+
+
 Synopsis
 ========
 
