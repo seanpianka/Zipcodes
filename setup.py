@@ -1,5 +1,5 @@
 # Always prefer setuptools over distutils
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open('README.rst') as f:
     readme = f.read()
@@ -22,6 +22,7 @@ setup(
     author_email='pianka@eml.cc',
     # Choose your license
     license='MIT',
+    packages=find_packages(),
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         # How mature is this project? Common values are
