@@ -23,7 +23,7 @@ __all__ = ['matching', 'similar_to', 'is_valid']
 _digits = re.compile('[^\d\-]')
 
 with gzip.open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'zips.json.gz'), 'rb') as f:
-    _zips = json.load(f)
+    _zips = json.loads(f.read().decode("ascii"))
 
 
 def validated_zipcode(f):
