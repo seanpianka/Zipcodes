@@ -9,6 +9,8 @@ platforms such as *AWS Lambda*. While more difficult to add additional
 zip-codes, this package provides the essential functionality of zip-code
 validation with fewer dependencies and minimal working logic.
 
+.. image:: https://pepy.tech/badge/zipcodes
+
 Contributions are welcome!
 
 Installation
