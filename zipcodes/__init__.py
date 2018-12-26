@@ -12,6 +12,7 @@ import gzip
 import json
 import os
 import re
+import warnings
 
 
 __all__ = ["matching", "similar_to", "is_valid"]
@@ -23,76 +24,63 @@ __version__ = "1.0.5"
 
 
 _digits = re.compile(r"[^\d\-]")
-_zips = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zips.json.gz")
+_zips_json = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zips.json.gz")
 
-with gzip.open(ZIP_CODES, "rb") as f:
+with gzip.open(_zips_json, "rb") as f:
     _zips = json.loads(f.read().decode("ascii"))
-
-
-@_validated_zipcode
-def matching(zipcode, zips=_zips):
-    """
-    Retrieve additional information about a zip-code such as the associated
-    city and state. The provided zipcode can either be of the form '06469' or
-    '06469-1154'. Zip-5-codes and Zip-9-codes are both supported.
-
-    """
-    return [z for z in zips if z["zip_code"] == zipcode]
-
-
-@_validated_zipcode
-def is_valid(zipcode):
-    """
-    Determine whether a given U.S. zip-code is valid. The provided zipcode
-    can either be of the form '06469' or '06469-1154'. Zip-5-codes and
-    Zip-9-codes are both supported.
-
-    """
-    return bool(matching(zipcode))
-
-
-@_validated_zipcode
-def similar_to(partial_zipcode, zips=_zips):
-    """
-    Retrieve a list of zip-code dictionaries where the prefix matches the
-    provided partial zip-code.
-
-    """
-    return [z for z in zips if z["zip_code"].startswith(partial_zipcode)]
-
-
-def filter_by(zips=_zips, **kwargs):
-    """
-    Filter through a list of zip-codes by providing keyword arguments and the
-    values which should be filtered.
-
-    """
-    return [z for z in zips if all([k in z and z[k] == v for k, v in kwargs.items()])]
-
-
-def list_all(zips=_zips):
-    """ Return a list containing all zip-code objects. """
-    return zips
 
 
 def _contains_nondigits(s):
     return bool(_digits.search(s))
 
 
-def _validate(zipcode):
+def _clean_zipcode(f):
+    return lambda zipcode, *args, **kwargs: f(_clean(zipcode), *args, **kwargs)
+
+
+def _clean(zipcode):
     if not zipcode or not isinstance(zipcode, str):
-        raise TypeError("Zipcode must be a string.")
+        raise TypeError("Invalid type, zipcode must be a string.")
 
     zipcode = zipcode.split("-")[0]  # Convert #####-#### to #####
 
     if len(zipcode) != 5:
-        raise ValueError('Zipcode must be of format: "#####" or "#####-####"')
+        raise ValueError('Invalid format, zipcode must be of the format: "#####" or "#####-####"')
 
     if _contains_nondigits(zipcode):
-        raise ValueError('Zipcode may only contain digits and "-".')
+        raise ValueError('Invalid characters, zipcode may only contain digits and "-".')
 
     return zipcode
 
 
-def _validated_zipcode(f):
-    return lambda zipcode, *args, **kwargs: f(_validate(zipcode), *args, **kwargs)
+@_clean_zipcode
+def matching(zipcode, zips=_zips):
+    """ Retrieve zipcode dict for provided zipcode """
+    return [z for z in zips if z["zip_code"] == zipcode]
+
+
+@_clean_zipcode
+def is_valid(zipcode):
+    warnings.warn("is_valid is deprecated; use is_real", warnings.DeprecationWarning)
+    return is_real(zipcode)
+
+
+@_clean_zipcode
+def is_real(zipcode):
+    """ Determine whether a given zip or zip+4 zipcode is real. """
+    return bool(matching(zipcode))
+
+
+def similar_to(partial_zipcode, zips=_zips):
+    """ List of zipcode dicts where zipcode prefix matches `partial_zipcode` """
+    return [z for z in zips if z["zip_code"].startswith(partial_zipcode)]
+
+
+def filter_by(zips=_zips, **kwargs):
+    """ Use `kwargs` to select for desired attributes from list of zipcode dicts """
+    return [z for z in zips if all([k in z and z[k] == v for k, v in kwargs.items()])]
+
+
+def list_all(zips=_zips):
+    """ Return a list containing all zip-code objects. """
+    return zips
