@@ -25,6 +25,7 @@ __version__ = "1.0.5"
 
 _digits = re.compile(r"[^\d\-]")
 _zips_json = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zips.json.gz")
+_valid_zipcode_length = 5
 
 with gzip.open(_zips_json, "rb") as f:
     _zips = json.loads(f.read().decode("ascii"))
@@ -35,17 +36,23 @@ def _contains_nondigits(s):
 
 
 def _clean_zipcode(f):
-    return lambda zipcode, *args, **kwargs: f(_clean(zipcode), *args, **kwargs)
+    def decorator(zipcode):
+        if not zipcode or not isinstance(zipcode, str):
+            raise TypeError("Invalid type, zipcode must be a string.")
+
+        return f(_clean(zipcode, min(len(zipcode), _valid_zipcode_length)))
+
+    return decorator
 
 
-def _clean(zipcode):
-    if not zipcode or not isinstance(zipcode, str):
-        raise TypeError("Invalid type, zipcode must be a string.")
-
+def _clean(zipcode, valid_length=_valid_zipcode_length):
+    """ Assumes zipcode is of type `str` """
     zipcode = zipcode.split("-")[0]  # Convert #####-#### to #####
 
-    if len(zipcode) != 5:
-        raise ValueError('Invalid format, zipcode must be of the format: "#####" or "#####-####"')
+    if len(zipcode) != valid_length:
+        raise ValueError(
+            'Invalid format, zipcode must be of the format: "#####" or "#####-####"'
+        )
 
     if _contains_nondigits(zipcode):
         raise ValueError('Invalid characters, zipcode may only contain digits and "-".')
@@ -71,6 +78,7 @@ def is_real(zipcode):
     return bool(matching(zipcode))
 
 
+@_clean_zipcode
 def similar_to(partial_zipcode, zips=_zips):
     """ List of zipcode dicts where zipcode prefix matches `partial_zipcode` """
     return [z for z in zips if z["zip_code"].startswith(partial_zipcode)]
