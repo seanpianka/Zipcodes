@@ -61,21 +61,27 @@ supported functionality.
     []
 
     >>> # Until it cannot.
-    >>> zipcodes.matching('abc123')
+    >>> zipcodes.matching('0646a')
     Traceback (most recent call last):
-      File "<stdin>", line 1, in <module>
-      File "/home/sean/Development/Zipcodes/zipcodes/__init__.py", line 30, in <lambda>
-        return lambda zipcode, *args, **kwargs: f(_validate(zipcode), *args, **kwargs)
-      File "/home/sean/Development/Zipcodes/zipcodes/__init__.py", line 181, in _validate
-        'state': 'SC',
-    TypeError: Zipcode may only contain digits and "-".
+      ...
+    TypeError: Invalid characters, zipcode may only contain digits and "-".
+
+    >>> zipcodes.matching('064690')
+    Traceback (most recent call last):
+      ...
+    TypeError: Invalid format, zipcode must be of the format: "#####" or "#####-####"
+
+    >>> zipcodes.matching(None)
+    Traceback (most recent call last):
+      ...
+    TypeError: Invalid type, zipcode must be a string.
 
     >>> # Whether the zip-code exists within the database.
-    >>> print(zipcodes.is_valid('06463'))
+    >>> print(zipcodes.is_real('06463'))
     False
 
     >>> # How handy!
-    >>> print(zipcodes.is_valid('06469'))
+    >>> print(zipcodes.is_real('06469'))
     True
 
     >>> # Search for zipcodes that begin with a pattern.
@@ -89,6 +95,7 @@ supported functionality.
       'world_region': 'NA',
       'zip_code': '06437',
       'zip_code_type': 'STANDARD'},
+
      {'active': True,
       'city': 'HADDAM',
       'country': 'US',
@@ -102,30 +109,30 @@ supported functionality.
     ]
 
     >>> # Use filter_by to filter a list of zip-codes by specific attribute->value pairs.
-    >>> pprint(zipcodes.filter_by(zipcodes.list_all(), active=True, city='WINDSOR'))
-    [{'active': True,
-      'city': 'WINDSOR',
-      'country': 'US',
-      'lat': 44.31,
-      'long': -69.58,
-      'state': 'ME',
-      'world_region': 'NA',
-      'zip_code': '04363',
-      'zip_code_type': 'STANDARD'},
-     {'active': True,
-      'city': 'WINDSOR',
-      'country': 'US',
-      'lat': 43.48,
-      'long': -72.42,
-      'state': 'VT',
-      'world_region': 'NA',
-      'zip_code': '05089',
-      'zip_code_type': 'STANDARD'},
-    ... # remaining results truncated for readability...
-    ]
+    >>> pprint(zipcodes.filter_by(city="WINDSOR", state="CT"))
+    [{"zip_code": "06006",
+      "zip_code_type": "UNIQUE",
+      "city": "WINDSOR",
+      "state": "CT",
+      "lat": 41.85,
+      "long": -72.65,
+      "world_region": "NA",
+      "country": "US",
+      "active": True },
+
+     {"zip_code": "06095",
+      "zip_code_type": "STANDARD",
+      "city": "WINDSOR",
+      "state": "CT",
+      "lat": 41.85,
+      "long": -72.65,
+      "world_region": "NA",
+      "country": "US",
+      "active": True},
+    ],
 
     >>> # Arbitrary nesting of similar_to and filter_by calls, allowing for great precision while filtering.
-    >>> pprint(zipcodes.similar_to('2', zips=zipcodes.filter_by(zipcodes.list_all(), active=True, city='WINDSOR')))
+    >>> pprint(zipcodes.similar_to('2', zips=zipcodes.filter_by(active=True, city='WINDSOR')))
     [{'active': True,
       'city': 'WINDSOR',
       'country': 'US',
