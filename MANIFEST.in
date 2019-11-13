@@ -2,6 +2,3 @@ include README.rst
 recursive-exclude tests *
 recursive-exclude ci *
 recursive-include zipcodes *
-
-find . -name '*.pyc' -delete
-find . -name '__pycache__' -type d -a -print0 | xargs -0 rm -rf
