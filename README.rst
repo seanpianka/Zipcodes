@@ -146,7 +146,6 @@ supported functionality.
 
     >>> # Arbitrary nesting of similar_to and filter_by calls, allowing for great precision while filtering.
     >>> pprint(zipcodes.similar_to('2', zips=zipcodes.filter_by(active=True, city='Windsor')))
-    >>> pprint(zipcodes.similar_to('2', zips=zipcodes.filter_by(active=True, city='Windsor')))
     [{'acceptable_cities': [],
       'active': True,
       'area_codes': ['757'],
