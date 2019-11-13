@@ -4,3 +4,4 @@ build/
 *.egg*
 update.command
 *.pyc
+.idea
