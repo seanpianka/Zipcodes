@@ -22,7 +22,7 @@ setup(
     author_email="pianka@eml.cc",
     # Choose your license
     license="MIT",
-    packages=find_packages(),
+    packages=find_packages(exclude=("ci", "tests")),
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         # How mature is this project? Common values are
