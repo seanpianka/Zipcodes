@@ -7,12 +7,15 @@ with open("README.rst") as f:
 with open("VERSION.txt") as f:
     version = f.read()
 
+
 setup(
     name="zipcodes",
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=version,
+
+    # remove whitespace (some IDE's add trailing newlines automatically)
+    version=version.strip(),
     description="No-SQLite U.S. zipcode validation Python package, ready for use in AWS Lambda",
     long_description=readme,
     # The project's main homepage.
