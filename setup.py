@@ -7,7 +7,6 @@ with open("README.rst") as f:
 with open("VERSION.txt") as f:
     version = f.read()
 
-
 setup(
     name="zipcodes",
     # Versions should comply with PEP440.  For a discussion on single-sourcing
