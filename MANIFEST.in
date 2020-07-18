@@ -1,4 +1,4 @@
-include README.rst
+include README.rst VERSION.txt
 recursive-exclude tests *
 recursive-exclude ci *
 recursive-include zipcodes *
