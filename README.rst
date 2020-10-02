@@ -16,17 +16,32 @@ Installation
 Synopsis
 ========
 
-In search for a package to lookup U.S. zipcode data, `zipcode <https://github.com/buckmaxwell/zipcode>`__ is one of
-the top results. However, if you're deploying into a cloud (and in my case, serverless) environment like AWS Lambda,
+In search for a package to look-up U.S. zipcode data, `zipcode <https://github.com/buckmaxwell/zipcode>`__ is one of
+the top results. 
+
+However, if you're deploying into a cloud--and in my case, serverless--environment like AWS Lambda,
 then the above package, which depends on SQLite, is not an option due to AWS Lambda's lack of runtime SQLite support.
 
-The data used in building `zipcodes/zips.json.bz2` can be found under `build/app/data/`. The scripts necessary to
-reproduce and build `zipcodes/zips.json.bz2` can be found under `build/app/__init__.py`.
+Data
+====
 
-The tests are defined in and are generated from a custom, declarative format.
+⚠️ The zipcode data was last updated on: **Nov. 13th, 2019** ⚠️
 
-Below is the expected usage of this package and a demonstration of
-supported functionality.
+The data used in building `zipcodes/zips.json.bz2` can be found under `build/app/data/`. 
+
+The scripts necessary to reproduce and build `zipcodes/zips.json.bz2` can be found under `build/app/__init__.py`.
+
+Tests
+=====
+
+The tests are defined in a custom declarative format that generates test cases from table-based input data.
+
+```bash
+$ python tests/__init__.py
+```
+
+Examples
+========
 
 .. code:: python
 
