@@ -40,6 +40,21 @@ The tests are defined in a custom declarative format that generates test cases f
 $ python tests/__init__.py
 ```
 
+Compiling with PyInstaller
+==========================
+
+When building binaries with PyInstaller where this package is leverage you need to add the following
+command line option to PyInstaller
+
+Windows
+``--add-data "<path-to-package-install>\zipcodes\zips.json.bz2;zipcodes"``
+
+Linux
+
+``--add-data "<path-to-package-install>\zipcodes\zips.json.bz2:zipcodes"``
+
+
+
 Examples
 ========
 
