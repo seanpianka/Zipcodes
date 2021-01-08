@@ -24,7 +24,7 @@ __author__ = "Sean Pianka"
 __email__ = "pianka@eml.cc"
 __license__ = "MIT"
 __package__ = "zipcodes"
-__version__ = "1.1.2a"
+__version__ = "1.1.3"
 
 _digits = re.compile(r"[^\d\-]")
 _valid_zipcode_length = 5
