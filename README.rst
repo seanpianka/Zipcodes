@@ -3,7 +3,8 @@ Zipcodes
 
 Zipcodes is a package for Python 3 and Python 2.7 which supports lookup and filtering of zipcode data for the U.S.
 
-.. image:: https://pepy.tech/badge/zipcodes
+.. image:: https://static.pepy.tech/personalized-badge/zipcodes?period=total&units=none&left_color=black&right_color=orange&left_text=Downloads
+ :target: https://pepy.tech/project/zipcodes
 
 Installation
 ============
