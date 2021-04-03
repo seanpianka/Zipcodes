@@ -24,11 +24,21 @@ __author__ = "Sean Pianka"
 __email__ = "pianka@eml.cc"
 __license__ = "MIT"
 __package__ = "zipcodes"
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 
 _digits = re.compile(r"[^\d\-]")
 _valid_zipcode_length = 5
-_zips_json = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zips.json.bz2")
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder nad stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+    
+_zips_json = resource_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "zips.json.bz2"))
 with bz2_open(_zips_json, "rb") as f:
     _zips = json.loads(f.read().decode("ascii"))
 
