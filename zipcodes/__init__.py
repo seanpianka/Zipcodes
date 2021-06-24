@@ -8,11 +8,11 @@ No-SQLite U.S. zipcode validation Python package, ready for use in AWS Lambda
 :github: @seanpianka
 
 """
+import bz2
+import json
 import os
 import re
 import sys
-import bz2
-import json
 import warnings
 
 if sys.version_info >= (3, 0):
@@ -28,27 +28,30 @@ __version__ = "1.1.3"
 
 _digits = re.compile(r"[^\d\-]")
 _valid_zipcode_length = 5
-def resource_path(relative_path):
+
+
+def _resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder nad stores path in _MEIPASS
         base_path = sys._MEIPASS
-    except Exception:
+    except AttributeError:
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
-    
-_zips_json = resource_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "zips.json.bz2"))
+
+
+_zips_json = _resource_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "zips.json.bz2"))
 with bz2_open(_zips_json, "rb") as f:
     _zips = json.loads(f.read().decode("ascii"))
 
 
-def _clean_zipcode(f):
+def _clean_zipcode(fn):
     def decorator(zipcode, *args, **kwargs):
         if not zipcode or not isinstance(zipcode, str):
             raise TypeError("Invalid type, zipcode must be a string.")
 
-        return f(
+        return fn(
             _clean(zipcode, min(len(zipcode), _valid_zipcode_length)), *args, **kwargs
         )
 

@@ -1,7 +1,7 @@
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 
-with open("README.rst") as f:
+with open("README.md") as f:
     readme = f.read()
 
 with open("VERSION.txt") as f:
@@ -15,7 +15,7 @@ setup(
 
     # remove whitespace (some IDE's add trailing newlines automatically)
     version=version.strip(),
-    description="No-SQLite U.S. zipcode validation Python package, ready for use in AWS Lambda",
+    description="Query U.S. state zipcodes without SQLite.",
     long_description=readme,
     # The project's main homepage.
     url="https://github.com/seanpianka/zipcodes",
@@ -39,17 +39,15 @@ setup(
         "License :: OSI Approved :: MIT License",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.2",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
     # What does your project relate to?
-    keywords="zipcode zip code validation validate codes nosql",
+    keywords="zipcode zip code us state query filter validate sqlite",
     include_package_data=True,
 )
