@@ -8,13 +8,13 @@ The Python `sqlite3` module is not required.
 >>> import zipcodes
 >>> assert zipcodes.is_real('77429')
 >>> assert len(zipcodes.similar_to('7742')) != 0
->>> exact = zipcodes.matching('77429')
->>> filtered = zipcodes.filter_by({ 
+>>> exact_zip = zipcodes.matching('77429')
+>>> filtered_zip = zipcodes.filter_by({ 
         "city": "Cypress", 
         "state": "TX" 
     })
->>> assert exact == filtered
->>> pprint.pprint(zc_exact)
+>>> assert exact_zip == filtered_zip
+>>> pprint.pprint(exact_zip)
 [{'acceptable_cities': [],
   'active': True,
   'area_codes': ['281', '832'],
