@@ -1,6 +1,6 @@
 # Zipcodes
 
-Zipcodes is a simple library for querying over U.S. zipcode data. 
+Zipcodes is a simple library for querying U.S. zipcodes.
 
 The Python `sqlite3` module is not required.
 
@@ -8,14 +8,11 @@ The Python `sqlite3` module is not required.
 >>> import zipcodes
 >>> assert zipcodes.is_real('77429')
 >>> assert len(zipcodes.similar_to('7742')) != 0
->>> exact_zip = zipcodes.matching('77429')
->>> filtered_zip = zipcodes.filter_by({ 
-        "city": "Cypress", 
-        "state": "TX" 
-    })
->>> assert exact_zip == filtered_zip
+>>> exact_zip = zipcodes.matching('77429')[0]
+>>> filtered_zips = zipcodes.filter_by(city="Cypress", state="TX") 
+>>> assert exact_zip in filtered_zips
 >>> pprint.pprint(exact_zip)
-[{'acceptable_cities': [],
+{'acceptable_cities': [],
   'active': True,
   'area_codes': ['281', '832'],
   'city': 'Cypress',
@@ -28,7 +25,7 @@ The Python `sqlite3` module is not required.
   'unacceptable_cities': [],
   'world_region': 'NA',
   'zip_code': '77429',
-  'zip_code_type': 'STANDARD'}]
+  'zip_code_type': 'STANDARD'}[
 ```
 
 ⚠️ The zipcode data was last updated on: **Nov. 13th, 2019** ⚠️
@@ -46,7 +43,7 @@ Zipcodes is available on PyPI:
 $ python -m pip install zipcodes
 ```
 
-Requests supports Python 2.6+ & 3.2+.
+Zipcodes supports Python 2.6+ and Python 3.2+.
 
 ### Compiling with PyInstaller
 
