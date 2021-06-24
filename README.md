@@ -31,6 +31,8 @@ The Python `sqlite3` module is not required.
   'zip_code_type': 'STANDARD'}]
 ```
 
+⚠️ The zipcode data was last updated on: **Nov. 13th, 2019** ⚠️
+
 [![Downloads](https://pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes/month)
 [![Supported Versions](https://img.shields.io/pypi/pyversions/zipcodes.svg)](https://pypi.org/project/zipcodes)
 [![Contributors](https://img.shields.io/github/contributors/seanpianka/zipcodes.svg)](https://github.com/seanpianka/zipcodes/graphs/contributors)
@@ -59,18 +61,21 @@ Add a data file to your PyInstaller bundle with the [`--add-data`](https://pyins
 
 ## Zipcode Data
 
-⚠️ The zipcode data was last updated on: **Nov. 13th, 2019** ⚠️
+The build script for the zipcode data outputs a JSON file containing all the zipcode data and zipped using bzip2. The data sources are stored under `build/app/data`. 
 
-The data used in building zipcodes/zips.json.bz2 can be found under
-build/app/data/.
+Build the zipcode data for distribution: 
 
-The scripts necessary to reproduce and build zipcodes/zips.json.bz2 can
-be found under build/app/\_\_init\_\_.py.
+```shell script
+$ build/app/__init__.py # outputs `zipcodes/zips.json.bz2`
+```
+
 
 ## Tests
 
-The tests are defined in a custom declarative format that generates test
-cases from table-based input data.
+The tests are defined in a declarative, table-based format that generates test
+cases. 
+
+Run the tests directly:
 
 ```shell script
 $ python tests/__init__.py 
