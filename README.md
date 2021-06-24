@@ -1,6 +1,8 @@
 # Zipcodes
 
-Zipcodes is a simple library for querying over U.S. zipcode data. The SQLite3 module is not required, so use in AWS Lambda is simplified.
+Zipcodes is a simple library for querying over U.S. zipcode data. 
+
+The Python `sqlite3` module is not required.
 
 ```python
 >>> import zipcodes
