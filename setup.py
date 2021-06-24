@@ -17,6 +17,7 @@ setup(
     version=version.strip(),
     description="Query U.S. state zipcodes without SQLite.",
     long_description=readme,
+    long_description_content_type="text/markdown",
     # The project's main homepage.
     url="https://github.com/seanpianka/zipcodes",
     # Author details
