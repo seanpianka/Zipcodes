@@ -2,7 +2,7 @@
 
 Zipcodes is a simple library for querying U.S. zipcodes.
 
-The Python `sqlite3` module is not required.
+The Python `sqlite3` module is not required in order to use this package.
 
 ```python
 >>> import zipcodes
