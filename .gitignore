@@ -6,3 +6,4 @@ update.command
 *.pyc
 .idea
 .pypirc
+zips.json

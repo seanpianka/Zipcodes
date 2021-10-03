@@ -7,11 +7,13 @@ from pprint import pprint
 def update_gps_coordinates(gps_data, base_data):
     info_place_by_zipcode = _index_list_of_dict_by_key(base_data, key="zip")
 
+    missing_keys = []
     start = time.time()
     for place in gps_data:
         try:
             info_place = info_place_by_zipcode[place["ZipCode"]]
         except KeyError:
+            missing_keys.append(place)
             continue
 
         info_place_idx = info_place["index"]
@@ -24,6 +26,7 @@ def update_gps_coordinates(gps_data, base_data):
     print(
         "Updated GPS from GPS CSV in {} seconds.".format(end - start)
     )  # Updated in 0.02237415313720703 seconds.
+    print(f"Missing Zipcodes: {missing_keys}")
 
     return base_data
 
