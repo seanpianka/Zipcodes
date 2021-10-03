@@ -28,7 +28,7 @@ The Python `sqlite3` module is not required in order to use this package.
   'zip_code_type': 'STANDARD'}[
 ```
 
-⚠️ The zipcode data was last updated on: **Nov. 13th, 2019** ⚠️
+⚠️ The zipcode data was last updated on: **Oct. 3, 2021** ⚠️
 
 [![Downloads](https://pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes/month)
 [![Supported Versions](https://img.shields.io/pypi/pyversions/zipcodes.svg)](https://pypi.org/project/zipcodes)
