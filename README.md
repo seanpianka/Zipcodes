@@ -127,12 +127,12 @@ $ python tests/__init__.py
 >>> zipcodes.matching('0646a')
 Traceback (most recent call last):
   ...
-TypeError: Invalid characters, zipcode may only contain digits and "-".
+ValueError: Invalid characters, zipcode may only contain digits and "-".
 
 >>> zipcodes.matching('064690')
 Traceback (most recent call last):
   ...
-TypeError: Invalid format, zipcode must be of the format: "#####" or "#####-####"
+ValueError: Invalid format, zipcode must be of the format: "#####" or "#####-####"
 
 >>> zipcodes.matching(None)
 Traceback (most recent call last):
