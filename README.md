@@ -32,7 +32,7 @@ The Python `sqlite3` module is not required in order to use this package.
 
 
 
-[![Downloads](https://static.pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes/month)
+[![Downloads](https://static.pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes)
 [![Supported Versions](https://img.shields.io/pypi/pyversions/zipcodes.svg)](https://pypi.org/project/zipcodes)
 [![Contributors](https://img.shields.io/github/contributors/seanpianka/zipcodes.svg)](https://github.com/seanpianka/zipcodes/graphs/contributors)
 
