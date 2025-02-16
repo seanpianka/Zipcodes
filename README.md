@@ -32,7 +32,7 @@ The Python `sqlite3` module is not required in order to use this package.
   'zip_code_type': 'STANDARD'}[
 ```
 
-⚠️ The zipcode data was last updated on: **Oct. 3, 2021** ⚠️
+⚠️ The zipcode data was last updated on: **Feb. 16, 2025** ⚠️
 
 ## Installation
 

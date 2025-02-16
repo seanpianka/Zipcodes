@@ -32,7 +32,7 @@ def update_gps_coordinates(gps_data, base_data):
 
 
 def strip_unsupported_schema(base_data, schema):
-    """ Strip keys/columns if not in SCHEMA """
+    """Strip keys/columns if not in SCHEMA"""
     return [
         {key: value for key, value in place.items() if key in schema}
         for place in base_data
@@ -40,7 +40,7 @@ def strip_unsupported_schema(base_data, schema):
 
 
 def perform_kv_transforms(base_data, schema):
-    """ Perform any necessary transforming of either the key or value.
+    """Perform any necessary transforming of either the key or value.
 
     :param base_data: original list of dicts of places
     :param schema: schema
@@ -76,7 +76,7 @@ def perform_kv_transforms(base_data, schema):
 
 
 def parse_csv(filename):
-    """ Convert CSV file to list of dictionaries.
+    """Convert CSV file to list of dictionaries.
 
     Source: https://stackoverflow.com/a/21572244/4562156
 
@@ -91,7 +91,7 @@ def parse_csv(filename):
 
 
 def _index_list_of_dict_by_key(seq, key):
-    """ If you need to fetch repeatedly from name, you should index them by name (using a dictionary), this way get
+    """If you need to fetch repeatedly from name, you should index them by name (using a dictionary), this way get
     operations would be O(1) time. An idea:
 
     Source: https://stackoverflow.com/a/4391722/4562156
@@ -105,7 +105,7 @@ def _index_list_of_dict_by_key(seq, key):
 
 
 def split_by_comma(s):
-    """ Split a string by comma, trim each resultant string element, and remove falsy-values.
+    """Split a string by comma, trim each resultant string element, and remove falsy-values.
 
     :param s: str to split by comma
     :return: list of provided string split by comma
@@ -114,7 +114,7 @@ def split_by_comma(s):
 
 
 def main():
-    """ This script loads the raw zipcode data from scripts/data and combines
+    """This script loads the raw zipcode data from scripts/data and combines
     them both into the final dataset that is used by the library.
 
     We define a dict that holds the "schema" the JSON returned by library
@@ -126,6 +126,8 @@ def main():
     """
     # This is the key layout of the unitedstatezipcodes' dataset mapped to this
     # library's public API.
+    #
+    # dataset_field_name to resultant_zips_json_field_name
     SCHEMA = {
         "zip": {"public": "zip_code"},
         "type": {"public": "zip_code_type"},
@@ -157,18 +159,22 @@ def main():
     gps_data = parse_csv(gps_zipcodes_filename)
     base_data = parse_csv(base_zipcodes_filename)
 
-    pprint("GPS Keys: {}".format(list(gps_data[0].keys())))
-    pprint("Base Keys: {}".format(list(base_data[0].keys())))
+    pprint(f"GPS Keys: {list(gps_data[0].keys())}, Len: {len(gps_data)}")
+    pprint(f"Base Keys: {list(base_data[0].keys())}, Len: {len(base_data)}")
 
     # Begin transforming base place data.
     base_data = update_gps_coordinates(gps_data, base_data)
     base_data = strip_unsupported_schema(base_data, SCHEMA)
     base_data = perform_kv_transforms(base_data, SCHEMA)
 
-    print("Writing zipcode information for {} places".format(len(base_data)))
+    print(list(filter(lambda i: i["zip_code"] == "11428", base_data)))
+
+    pprint(f"Updated Base Base Keys: {list(base_data[0].keys())}, Len: {len(base_data)}")
 
     with open("zips.json", "w") as f:
         json.dump(base_data, f)
+
+    print(len(base_data))
 
     print("To zip for production, run:\n$ bzip2 zips.json")
 

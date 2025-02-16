@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 main() {
     rm -rf dist
-    python setup.py sdist bdist_wheel
+    python -m build
     twine upload --config-file="./.pypirc" --repository="zipcodes" dist/*
 }
 
