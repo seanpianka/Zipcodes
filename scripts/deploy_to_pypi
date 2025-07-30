@@ -4,7 +4,7 @@ set -euo pipefail
 main() {
     rm -rf dist
     python -m build
-    twine upload --config-file="./.pypirc" --repository="zipcodes" dist/*
+    twine upload --config-file="./.pypirc" --repository="zipcodes_basic" dist/*
 }
 
 main "$@"
