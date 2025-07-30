@@ -20,11 +20,11 @@ if sys.version_info >= (3, 0):
 else:
     bz2_open = bz2.BZ2File
 
-__author__ = "Sean Pianka"
-__email__ = "pianka@eml.cc"
+__author__ = "Sean Pianka & Noah Baker"
+__email__ = "baker.noah@principal.com"
 __license__ = "MIT"
-__package__ = "zipcodes"
-__version__ = "1.1.3"
+__package__ = "zipcodes_basic"
+__version__ = "1.0.0"
 
 _digits = re.compile(r"[^\d\-]")
 _valid_zipcode_length = 5
@@ -63,7 +63,7 @@ def matching(zipcode, zips=None):
     """ Retrieve zipcode dict for provided zipcode """
     if zips is None:
         zips = _zips
-    return [z for z in zips if z["zip_code"] == zipcode]
+    return [z for z in zips if (z["zip_code"] == zipcode or z["other_zip"]== zipcode)]
 
 
 @_clean_zipcode
@@ -76,33 +76,6 @@ def is_valid(zipcode):
 def is_real(zipcode):
     """ Determine whether a given zip or zip+4 zipcode is real. """
     return bool(matching(zipcode))
-
-
-@_clean_zipcode
-def similar_to(partial_zipcode, zips=None):
-    """ List of zipcode dicts where zipcode prefix matches `partial_zipcode` """
-    if zips is None:
-        zips = _zips
-    return [z for z in zips if z["zip_code"].startswith(partial_zipcode)]
-
-
-def filter_by(zips=None, **filters):
-    """ Use `kwargs` to select for desired attributes from list of zipcode dicts """
-    if zips is None:
-        zips = _zips
-
-    return [
-        zip
-        for zip in zips
-        if all([key in zip and zip[key] == value for key, value in filters.items()])
-    ]
-
-
-def list_all(zips=None):
-    """ Return a list containing all zip-code objects. """
-    if zips is None:
-        zips = _zips
-    return zips
 
 
 def _contains_nondigits(s):
