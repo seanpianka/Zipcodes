@@ -12,6 +12,7 @@ description = "Query U.S. state zipcodes without SQLite."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
+license-files = ["LICENSE.txt"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -34,3 +35,6 @@ manifest-path = "crates/zipcodes-py/Cargo.toml"
 python-source = "python"
 module-name = "zipcodes._zipcodes"
 features = ["pyo3/abi3-py39"]
+# PyPI rejects uploads whose License-File metadata names a file absent from
+# the archive, so the license must ship inside the sdist itself.
+include = [{ path = "LICENSE.txt", format = "sdist" }]

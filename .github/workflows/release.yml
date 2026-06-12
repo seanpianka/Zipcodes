@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Manual dispatch rebuilds and publishes the current version; already
+  # uploaded files are skipped, so this completes partially failed releases.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -73,6 +76,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
+          skip-existing: true
 
   publish-crates-io:
     needs: [wheels, sdist]
@@ -80,6 +84,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo publish -p zipcodes
+      - name: Publish to crates.io (skipped if version already published)
+        run: |
+          VERSION=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          if curl -fsSL "https://crates.io/api/v1/crates/zipcodes/$VERSION" | grep -q '"num"'; then
+            echo "zipcodes $VERSION already on crates.io; skipping."
+            exit 0
+          fi
+          cargo publish -p zipcodes
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
