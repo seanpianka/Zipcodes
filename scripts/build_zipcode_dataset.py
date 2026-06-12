@@ -176,7 +176,10 @@ def main():
 
     print(len(base_data))
 
-    print("To zip for production, run:\n$ bzip2 zips.json")
+    print(
+        "To embed in the library, run:\n"
+        "$ bzip2 zips.json && mv zips.json.bz2 crates/zipcodes/src/zips.json.bz2"
+    )
 
 
 main()

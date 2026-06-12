@@ -1,0 +1,19 @@
+[package]
+name = "zipcodes"
+description = "Query U.S. zipcodes without SQLite, with the full dataset embedded at compile time."
+readme = "README.md"
+keywords = ["zipcode", "zip", "us", "query", "validate"]
+categories = ["data-structures", "database"]
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+bzip2 = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"

@@ -1,4 +1,0 @@
-include README.rst VERSION.txt
-recursive-exclude tests *
-recursive-exclude scripts *
-recursive-include zipcodes *

@@ -1,80 +1,106 @@
 # Zipcodes
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zipcodes)
+[![PyPI](https://img.shields.io/pypi/v/zipcodes)](https://pypi.org/project/zipcodes/)
+[![crates.io](https://img.shields.io/crates/v/zipcodes)](https://crates.io/crates/zipcodes)
 [![Downloads](https://static.pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes)
 [![Contributors](https://img.shields.io/github/contributors/seanpianka/zipcodes.svg)](https://github.com/seanpianka/zipcodes/graphs/contributors)
 
-Zipcodes is a simple library for querying U.S. zipcodes.
+Zipcodes is a simple library for querying U.S. zipcodes. No SQLite, no
+network, no runtime data files — the full dataset is embedded in the package.
 
-The Python `sqlite3` module is not required in order to use this package.
+Since 2.0, the library is implemented in Rust and published from a single
+codebase as both the [`zipcodes` Python package](https://pypi.org/project/zipcodes/)
+and the [`zipcodes` Rust crate](https://crates.io/crates/zipcodes). The Python
+API is a drop-in replacement for 1.x — same functions, same dicts, same
+exceptions — just faster:
+
+| Operation | 1.x (pure Python) | 2.0 (Rust) |
+|---|---|---|
+| `import zipcodes` | ~330 ms (loads dataset) | ~5 ms (dataset loads lazily on first query, ~200 ms) |
+| `is_real("06903")` | ~4.2 ms | ~0.03 ms |
+| `matching("77429")` | ~4.2 ms | ~0.3 ms |
+| `similar_to("1018")` | ~7.2 ms | ~0.3 ms |
+| `filter_by(state="TX")` | ~9.7 ms | ~3.7 ms |
 
 ```python
 >>> import zipcodes
 >>> assert zipcodes.is_real('77429')
 >>> assert len(zipcodes.similar_to('7742')) != 0
 >>> exact_zip = zipcodes.matching('77429')[0]
->>> filtered_zips = zipcodes.filter_by(city="Cypress", state="TX") 
+>>> filtered_zips = zipcodes.filter_by(city="Cypress", state="TX")
 >>> assert exact_zip in filtered_zips
 >>> pprint.pprint(exact_zip)
 {'acceptable_cities': [],
-  'active': True,
-  'area_codes': ['281', '832'],
-  'city': 'Cypress',
-  'country': 'US',
-  'county': 'Harris County',
-  'lat': '29.9857',
-  'long': '-95.6548',
-  'state': 'TX',
-  'timezone': 'America/Chicago',
-  'unacceptable_cities': [],
-  'world_region': 'NA',
-  'zip_code': '77429',
-  'zip_code_type': 'STANDARD'}[
+ 'active': True,
+ 'area_codes': ['281', '346', '713', '832'],
+ 'city': 'Cypress',
+ 'country': 'US',
+ 'county': 'Harris County',
+ 'lat': '29.9857',
+ 'long': '-95.6548',
+ 'state': 'TX',
+ 'timezone': 'America/Chicago',
+ 'unacceptable_cities': [],
+ 'world_region': 'NA',
+ 'zip_code': '77429',
+ 'zip_code_type': 'STANDARD'}
 ```
 
 ⚠️ The zipcode data was last updated on: **Feb. 16, 2025** ⚠️
 
 ## Installation
 
-Zipcodes is available on PyPI:
+### Python
 
 ```console
 $ python -m pip install zipcodes
 ```
 
-Zipcodes supports Python 2.6+ and Python 3.2+.
+Zipcodes 2.x supports Python 3.9+ and ships prebuilt wheels for Linux
+(x86_64, aarch64, musl), macOS, and Windows. Installing from the source
+distribution requires a Rust toolchain. Python 2.6+/3.2+ users are
+automatically served the pure-Python 1.3.0 release by pip.
 
-### Compiling with PyInstaller
+### Rust
 
-Add a data file to your PyInstaller bundle with the [`--add-data`](https://pyinstaller.readthedocs.io/en/stable/spec-files.html#adding-data-files) flag.
+```console
+$ cargo add zipcodes
+```
 
+### New in 2.0
 
-#### Linux and MacOS
-`--add-data "<path-to-package-install>/zipcodes/zips.json.bz2:zipcodes"`
-
-#### Windows
-`--add-data "<path-to-package-install>\zipcodes\zips.json.bz2;zipcodes"`
+- Implemented in Rust; the dataset is compiled into the extension module and
+  decompressed lazily on first query, so `import zipcodes` is effectively free.
+- New functions: `contains`, `filter_by_state`, `filter_by_city`,
+  `filter_by_county`, `filter_by_timezone`, `filter_by_zip_code_type`,
+  `filter_by_coordinates`, and `haversine`.
+- `is_valid` now actually emits its `DeprecationWarning` (in 1.x it raised
+  `AttributeError`); use `is_real`.
+- PyInstaller users no longer need `--add-data` for `zips.json.bz2` — there is
+  no data file anymore.
+- Behavioral notes for upgraders: query results are fresh dicts (mutating a
+  result no longer mutates the shared database list), and
+  `filter_by(active=1)` no longer matches `active=True` (pass a bool).
 
 ## Zipcode Data
 
-The build script for the zipcode data outputs a JSON file containing all the zipcode data and zipped using bzip2. The data sources are stored under `build/app/data`. 
-
-Build the zipcode data for distribution: 
+The build script merges the raw CSV sources under `scripts/data` into the
+final dataset embedded in the library:
 
 ```shell script
-$ build/app/__init__.py # outputs `zipcodes/zips.json.bz2`
+$ python scripts/build_zipcode_dataset.py  # outputs `zips.json`
+$ bzip2 zips.json && mv zips.json.bz2 crates/zipcodes/src/zips.json.bz2
 ```
-
 
 ## Tests
 
 The tests are defined in a declarative, table-based format that generates test
-cases. 
-
-Run the tests directly:
+cases.
 
 ```shell script
-$ python tests/__init__.py 
+$ cargo test                    # Rust unit tests
+$ python tests/__init__.py      # Python suite (or: pytest tests/)
 ```
 
 ## Examples
@@ -87,7 +113,7 @@ $ python tests/__init__.py
 >>> pprint(zipcodes.matching('77429'))
 [{'acceptable_cities': [],
   'active': True,
-  'area_codes': ['281', '832'],
+  'area_codes': ['281', '346', '713', '832'],
   'city': 'Cypress',
   'country': 'US',
   'county': 'Harris County',
@@ -101,11 +127,11 @@ $ python tests/__init__.py
   'zip_code_type': 'STANDARD'}]
 
 
->>> # Handles of Zip+4 zip-codes nicely. :)
+>>> # Handles Zip+4 zip-codes nicely. :)
 >>> pprint(zipcodes.matching('77429-1145'))
 [{'acceptable_cities': [],
   'active': True,
-  'area_codes': ['281', '832'],
+  'area_codes': ['281', '346', '713', '832'],
   'city': 'Cypress',
   'country': 'US',
   'county': 'Harris County',
@@ -172,7 +198,7 @@ True
   'long': '-74.0067',
   'state': 'NY',
   'timezone': 'America/New_York',
-  'unacceptable_cities': [],
+  'unacceptable_cities': ['Manhattan', 'New York City', 'NY', 'Ny City', 'Nyc'],
   'world_region': 'NA',
   'zip_code': '10185',
   'zip_code_type': 'PO BOX'}]
@@ -181,7 +207,7 @@ True
 >>> pprint(zipcodes.filter_by(city="Old Saybrook"))
 [{'acceptable_cities': [],
   'active': True,
-  'area_codes': ['860'],
+  'area_codes': ['860', '959'],
   'city': 'Old Saybrook',
   'country': 'US',
   'county': 'Middlesex County',
@@ -195,50 +221,24 @@ True
   'zip_code_type': 'STANDARD'}]
 
 >>> # Arbitrary nesting of similar_to and filter_by calls, allowing for great precision while filtering.
->>> pprint(zipcodes.similar_to('2', zips=zipcodes.filter_by(active=True, city='Windsor')))
-[{'acceptable_cities': [],
-  'active': True,
-  'area_codes': ['757'],
-  'city': 'Windsor',
-  'country': 'US',
-  'county': 'Isle of Wight County',
-  'lat': '36.8628',
-  'long': '-76.7143',
-  'state': 'VA',
-  'timezone': 'America/New_York',
-  'unacceptable_cities': [],
-  'world_region': 'NA',
-  'zip_code': '23487',
-  'zip_code_type': 'STANDARD'},
- {'acceptable_cities': ['Askewville'],
-  'active': True,
-  'area_codes': ['252'],
-  'city': 'Windsor',
-  'country': 'US',
-  'county': 'Bertie County',
-  'lat': '35.9942',
-  'long': '-76.9422',
-  'state': 'NC',
-  'timezone': 'America/New_York',
-  'unacceptable_cities': [],
-  'world_region': 'NA',
-  'zip_code': '27983',
-  'zip_code_type': 'STANDARD'},
- {'acceptable_cities': [],
-  'active': True,
-  'area_codes': ['803'],
-  'city': 'Windsor',
-  'country': 'US',
-  'county': 'Aiken County',
-  'lat': '33.4730',
-  'long': '-81.5132',
-  'state': 'SC',
-  'timezone': 'America/New_York',
-  'unacceptable_cities': [],
-  'world_region': 'NA',
-  'zip_code': '29856',
-  'zip_code_type': 'STANDARD'}]
+>>> pprint([z['zip_code'] for z in zipcodes.similar_to('2', zips=zipcodes.filter_by(active=True, city='Windsor'))])
+['23487', '27983', '29856']
+
+>>> # Find zipcodes within a radius (miles) of a coordinate.
+>>> pprint([z['zip_code'] for z in zipcodes.filter_by_coordinates(41.3015, -72.3879, 5)])
+['06371', '06409', '06426', '06442', '06475', '06498']
 
 >>> # Have any other ideas? Make a pull request and start contributing today!
 >>> # Made with love by Sean Pianka
 ```
+
+## Repository layout
+
+This repository builds both packages from one Rust core:
+
+- `crates/zipcodes` — the core library, published to
+  [crates.io](https://crates.io/crates/zipcodes).
+- `crates/zipcodes-py` — PyO3 bindings (not published to crates.io).
+- `python/zipcodes` — the thin Python compatibility layer; together with the
+  bindings it forms the [PyPI package](https://pypi.org/project/zipcodes/),
+  built with [maturin](https://github.com/PyO3/maturin).

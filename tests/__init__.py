@@ -13,6 +13,8 @@ logger = CustomLogger(__name__)
 
 
 class TestZipcodes(unittest.TestCase):
+    maxDiff = None
+
     pass
 
 
@@ -67,164 +69,174 @@ def generate_unittests(unittests_schema):
             )
 
 
-def main():
-    # name of this stage, typically a name to reference the assertion
-    # assertion: lambda which returns unittest callable with self's (testcase's) context
-    # predicates: lambda or sequence of lambdas to call and pass to the assertion
-    unittests_schema = [
-        {
-            "name": "true",
-            "assertion": lambda self: self.assertTrue,
-            "predicates": [
-                lambda: zipcodes.is_real("06905"),
-                lambda: zipcodes._contains_nondigits("1234a"),
-                # bad length
-                lambda: callable_raise_exc(
-                    lambda: zipcodes._clean("000000"), ValueError
-                ),
-                # bad characters
-                lambda: callable_raise_exc(
-                    lambda: zipcodes._clean("0000a"), ValueError
-                ),
-                # ensure zips argument works
-                lambda: len(
-                    zipcodes.similar_to(
-                        "2", zips=zipcodes.filter_by(active=True, city="Windsor")
-                    )
+# name of this stage, typically a name to reference the assertion
+# assertion: lambda which returns unittest callable with self's (testcase's) context
+# predicates: lambda or sequence of lambdas to call and pass to the assertion
+unittests_schema = [
+    {
+        "name": "true",
+        "assertion": lambda self: self.assertTrue,
+        "predicates": [
+            lambda: zipcodes.is_real("06905"),
+            lambda: zipcodes._contains_nondigits("1234a"),
+            # bad length
+            lambda: callable_raise_exc(
+                lambda: zipcodes._clean("000000"), ValueError
+            ),
+            # bad characters
+            lambda: callable_raise_exc(
+                lambda: zipcodes._clean("0000a"), ValueError
+            ),
+            # ensure zips argument works
+            lambda: len(
+                zipcodes.similar_to(
+                    "2", zips=zipcodes.filter_by(active=True, city="Windsor")
                 )
-                == 3,
-            ],
-        },
-        {
-            "name": "false",
-            "assertion": lambda self: self.assertFalse,
-            "predicates": [
-                lambda: zipcodes.is_real("91239"),
-                # digits and "-" are acceptable
-                lambda: zipcodes._contains_nondigits("12345"),
-                lambda: zipcodes._contains_nondigits("1234-"),
-            ],
-        },
-        {
-            "name": "equal",
-            "assertion": lambda self: self.assertEqual,
-            "predicates": [
-                # valid_zipcode_length parameter
-                (lambda: zipcodes._clean("0646", 4), lambda: "0646"),
-                # default behavior
-                (lambda: zipcodes._clean("06469"), lambda: "06469"),
-                (lambda: zipcodes.list_all(), lambda: zipcodes._zips),
-                (
-                    lambda: zipcodes.filter_by(city="Old Saybrook"),
-                    lambda: [
-                        {
-                            "zip_code": "06475",
-                            "zip_code_type": "STANDARD",
-                            "active": True,
-                            "city": "Old Saybrook",
-                            "acceptable_cities": [],
-                            "unacceptable_cities": ["Fenwick"],
-                            "state": "CT",
-                            "county": "Middlesex County",
-                            "timezone": "America/New_York",
-                            "area_codes": ["860"],
-                            "world_region": "NA",
-                            "country": "US",
-                            "lat": "41.3015",
-                            "long": "-72.3879",
-                        }
-                    ],
-                ),
-                (
-                    lambda: zipcodes.similar_to("1018"),
-                    lambda: [
-                        {
-                            "acceptable_cities": [],
-                            "active": False,
-                            "area_codes": ["212"],
-                            "city": "New York",
-                            "country": "US",
-                            "county": "New York County",
-                            "lat": "40.71",
-                            "long": "-74",
-                            "state": "NY",
-                            "timezone": "America/New_York",
-                            "unacceptable_cities": ["J C Penney"],
-                            "world_region": "NA",
-                            "zip_code": "10184",
-                            "zip_code_type": "UNIQUE",
-                        },
-                        {
-                            "acceptable_cities": [],
-                            "active": True,
-                            "area_codes": ["212"],
-                            "city": "New York",
-                            "country": "US",
-                            "county": "New York County",
-                            "lat": "40.7143",
-                            "long": "-74.0067",
-                            "state": "NY",
-                            "timezone": "America/New_York",
-                            "unacceptable_cities": [],
-                            "world_region": "NA",
-                            "zip_code": "10185",
-                            "zip_code_type": "PO BOX",
-                        },
-                    ],
-                ),
-                (
-                    lambda: zipcodes.similar_to("1005"),
-                    lambda: [
-                        {
-                            "zip_code": "10055",
-                            "zip_code_type": "STANDARD",
-                            "active": True,
-                            "city": "New York",
-                            "acceptable_cities": [],
-                            "unacceptable_cities": ["Manhattan"],
-                            "state": "NY",
-                            "county": "New York County",
-                            "timezone": "America/New_York",
-                            "area_codes": ["212"],
-                            "world_region": "NA",
-                            "country": "US",
-                            "lat": "40.7579",
-                            "long": "-73.9743",
-                        }
-                    ],
-                ),
-                (
-                    lambda: zipcodes.similar_to("10001"),
-                    lambda: [
-                        {
-                            "zip_code": "10001",
-                            "zip_code_type": "STANDARD",
-                            "active": True,
-                            "city": "New York",
-                            "acceptable_cities": [],
-                            "unacceptable_cities": [
-                                "Empire State",
-                                "G P O",
-                                "Greeley Square",
-                                "Macys Finance",
-                                "Manhattan",
-                            ],
-                            "state": "NY",
-                            "county": "New York County",
-                            "timezone": "America/New_York",
-                            "area_codes": ["718", "917", "347", "646"],
-                            "world_region": "NA",
-                            "country": "US",
-                            "lat": "40.7508",
-                            "long": "-73.9961",
-                        }
-                    ],
-                ),
-            ],
-        },
-    ]
+            )
+            == 3,
+        ],
+    },
+    {
+        "name": "false",
+        "assertion": lambda self: self.assertFalse,
+        "predicates": [
+            lambda: zipcodes.is_real("91239"),
+            # digits and "-" are acceptable
+            lambda: zipcodes._contains_nondigits("12345"),
+            lambda: zipcodes._contains_nondigits("1234-"),
+        ],
+    },
+    {
+        "name": "equal",
+        "assertion": lambda self: self.assertEqual,
+        "predicates": [
+            # valid_zipcode_length parameter
+            (lambda: zipcodes._clean("0646", 4), lambda: "0646"),
+            # default behavior
+            (lambda: zipcodes._clean("06469"), lambda: "06469"),
+            (lambda: zipcodes.list_all(), lambda: zipcodes._zips),
+            (
+                lambda: zipcodes.filter_by(city="Old Saybrook"),
+                lambda: [
+                    {
+                        "zip_code": "06475",
+                        "zip_code_type": "STANDARD",
+                        "active": True,
+                        "city": "Old Saybrook",
+                        "acceptable_cities": [],
+                        "unacceptable_cities": ["Fenwick"],
+                        "state": "CT",
+                        "county": "Middlesex County",
+                        "timezone": "America/New_York",
+                        "area_codes": ["860", "959"],
+                        "world_region": "NA",
+                        "country": "US",
+                        "lat": "41.3015",
+                        "long": "-72.3879",
+                    }
+                ],
+            ),
+            (
+                lambda: zipcodes.similar_to("1018"),
+                lambda: [
+                    {
+                        "acceptable_cities": [],
+                        "active": False,
+                        "area_codes": ["212"],
+                        "city": "New York",
+                        "country": "US",
+                        "county": "New York County",
+                        "lat": "40.71",
+                        "long": "-74",
+                        "state": "NY",
+                        "timezone": "America/New_York",
+                        "unacceptable_cities": ["J C Penney"],
+                        "world_region": "NA",
+                        "zip_code": "10184",
+                        "zip_code_type": "UNIQUE",
+                    },
+                    {
+                        "acceptable_cities": [],
+                        "active": True,
+                        "area_codes": ["212"],
+                        "city": "New York",
+                        "country": "US",
+                        "county": "New York County",
+                        "lat": "40.7143",
+                        "long": "-74.0067",
+                        "state": "NY",
+                        "timezone": "America/New_York",
+                        "unacceptable_cities": ['Manhattan', 'New York City', 'NY', 'Ny City', 'Nyc'],
+                        "world_region": "NA",
+                        "zip_code": "10185",
+                        "zip_code_type": "PO BOX",
+                    },
+                ],
+            ),
+            (
+                lambda: zipcodes.similar_to("1005"),
+                lambda: [
+                    {
+                        "zip_code": "10055",
+                        "zip_code_type": "STANDARD",
+                        "active": True,
+                        "city": "New York",
+                        "acceptable_cities": [],
+                        "unacceptable_cities": ["Manhattan", "New York City", "NY", "Ny City", "Nyc"],
+                        "state": "NY",
+                        "county": "New York County",
+                        "timezone": "America/New_York",
+                        "area_codes": ["212"],
+                        "world_region": "NA",
+                        "country": "US",
+                        "lat": "40.7579",
+                        "long": "-73.9743",
+                    }
+                ],
+            ),
+            (
+                lambda: zipcodes.similar_to("10001"),
+                lambda: [
+                    {
+                        "zip_code": "10001",
+                        "zip_code_type": "STANDARD",
+                        "active": True,
+                        "city": "New York",
+                        "acceptable_cities": [],
+                        "unacceptable_cities": [
+                            "Empire State",
+                            "Gpo",
+                            "Greeley Square",
+                            "Macys Finance",
+                            "Manhattan",
+                            'New York City',
+                            'NY',
+                            'Ny City',
+                            'Nyc'],
+                        "state": "NY",
+                        "county": "New York County",
+                        "timezone": "America/New_York",
+                        "area_codes": ['212', '332', '347', '646', '718', '917', '929'],
+                        "world_region": "NA",
+                        "country": "US",
+                        "lat": "40.7508",
+                        "long": "-73.9961",
+                    }
+                ],
+            ),
+            (
+                lambda: zipcodes.filter_by_coordinates(42.2529, 71.0023, 100, zipcodes.filter_by_state("MA")),
+                lambda: [
+                ],
+            ),
+        ],
+    },
+]
 
-    generate_unittests(unittests_schema)
+generate_unittests(unittests_schema)
+
+
+def main():
     logger.info("Zipcodes version: {}".format(zipcodes.__version__))
     unittest.main()
 

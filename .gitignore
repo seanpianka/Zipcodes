@@ -4,6 +4,11 @@ build/
 *.egg*
 update.command
 *.pyc
+*.so
 .idea
 .pypirc
+.venv/
 zips.json
+/target
+uv.lock
+.DS_Store
