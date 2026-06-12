@@ -10,7 +10,8 @@ decompressed on first access — no files, no network, no database.
 This crate and the [`zipcodes` Python package](https://pypi.org/project/zipcodes/)
 are built from the same source: <https://github.com/seanpianka/zipcodes>.
 
-⚠️  The zipcode data was last updated on: **Feb. 16, 2025** ⚠️
+The zipcode data is refreshed automatically every month by CI in the source
+repository.
 
 The minimum supported Rust version (MSRV) is `1.82`.
 
@@ -136,6 +137,12 @@ The zipcode data is embedded directly into the library at compile time via
 `include_bytes!` and decompressed lazily on first use. This ensures fast
 lookups at runtime without needing to read from a file or an external
 database.
+
+The dataset is assembled from unitedstateszipcodes.org (base data), the USPS
+ZIP Locale Detail file (active delivery ZIPs, public domain), and
+[GeoNames](https://www.geonames.org/) postal data (GPS coordinates, licensed
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)). It is refreshed
+monthly by an automated workflow in the source repository.
 
 ## Contributing
 

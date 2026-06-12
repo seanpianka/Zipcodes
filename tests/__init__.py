@@ -78,6 +78,8 @@ unittests_schema = [
         "assertion": lambda self: self.assertTrue,
         "predicates": [
             lambda: zipcodes.is_real("06905"),
+            # https://github.com/seanpianka/Zipcodes/issues/23
+            lambda: zipcodes.is_real("85144"),
             lambda: zipcodes._contains_nondigits("1234a"),
             # bad length
             lambda: callable_raise_exc(
@@ -131,8 +133,8 @@ unittests_schema = [
                         "area_codes": ["860", "959"],
                         "world_region": "NA",
                         "country": "US",
-                        "lat": "41.3015",
-                        "long": "-72.3879",
+                        "lat": "41.2913",
+                        "long": "-72.385",
                     }
                 ],
             ),
@@ -162,8 +164,8 @@ unittests_schema = [
                         "city": "New York",
                         "country": "US",
                         "county": "New York County",
-                        "lat": "40.7143",
-                        "long": "-74.0067",
+                        "lat": "40.7808",
+                        "long": "-73.9772",
                         "state": "NY",
                         "timezone": "America/New_York",
                         "unacceptable_cities": ['Manhattan', 'New York City', 'NY', 'Ny City', 'Nyc'],
@@ -189,8 +191,8 @@ unittests_schema = [
                         "area_codes": ["212"],
                         "world_region": "NA",
                         "country": "US",
-                        "lat": "40.7579",
-                        "long": "-73.9743",
+                        "lat": "40.7808",
+                        "long": "-73.9772",
                     }
                 ],
             ),
@@ -219,8 +221,8 @@ unittests_schema = [
                         "area_codes": ['212', '332', '347', '646', '718', '917', '929'],
                         "world_region": "NA",
                         "country": "US",
-                        "lat": "40.7508",
-                        "long": "-73.9961",
+                        "lat": "40.7484",
+                        "long": "-73.9967",
                     }
                 ],
             ),

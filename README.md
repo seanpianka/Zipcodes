@@ -47,7 +47,8 @@ exceptions — just faster:
  'zip_code_type': 'STANDARD'}
 ```
 
-⚠️ The zipcode data was last updated on: **Feb. 16, 2025** ⚠️
+The zipcode data is refreshed automatically every month — see
+[Zipcode Data](#zipcode-data).
 
 ## Installation
 
@@ -85,12 +86,42 @@ $ cargo add zipcodes
 
 ## Zipcode Data
 
-The build script merges the raw CSV sources under `scripts/data` into the
-final dataset embedded in the library:
+The embedded dataset (`crates/zipcodes/src/zips.json.bz2`) is assembled from
+three sources:
+
+- **[unitedstateszipcodes.org](https://www.unitedstateszipcodes.org)** — the
+  rich base data (city aliases, zip type, area codes, county, timezone),
+  committed in-repo as `scripts/data/zip_code_database.csv`. Its bot
+  protection prevents automated downloads, so this file is refreshed manually
+  on occasion.
+- **[GeoNames](https://www.geonames.org/)** (`download.geonames.org/export/zip/US.zip`) —
+  GPS coordinates, fetched fresh on every update. Licensed
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- **USPS ZIP Locale Detail** ([postalpro.usps.com](https://postalpro.usps.com/ZIP_Locale_Detail)) —
+  the authoritative list of active delivery ZIPs, fetched fresh on every
+  update and used to add zipcodes missing from the base CSV
+  ([#23](https://github.com/seanpianka/Zipcodes/issues/23)). Public domain.
+
+A GitHub Actions workflow ([`update-data.yml`](.github/workflows/update-data.yml))
+rebuilds the dataset on the 1st of every month
+([#7](https://github.com/seanpianka/Zipcodes/issues/7)). If anything changed,
+it opens a pull request with a summary of added/removed/modified records;
+merging that PR tags a patch release, which publishes to PyPI and crates.io
+automatically.
+
+To rebuild the dataset manually:
 
 ```shell script
-$ python scripts/build_zipcode_dataset.py  # outputs `zips.json`
-$ bzip2 zips.json && mv zips.json.bz2 crates/zipcodes/src/zips.json.bz2
+$ pip install xlrd
+$ curl -fsSL https://download.geonames.org/export/zip/US.zip -o /tmp/geonames_us.zip
+$ # download the .xls linked from https://postalpro.usps.com/ZIP_Locale_Detail
+$ python scripts/update_zipcode_dataset.py \
+    --base scripts/data/zip_code_database.csv \
+    --gps scripts/data/zip-codes-database-FREE.csv \
+    --geonames-zip /tmp/geonames_us.zip \
+    --usps-xls /tmp/usps_zip_locale.xls \
+    --output-bz2 crates/zipcodes/src/zips.json.bz2 \
+    --summary-output /tmp/change_summary.json
 ```
 
 ## Tests

@@ -1,0 +1,42 @@
+name: Auto Release
+
+# Tags a release when an automated data-update PR (from update-data.yml) is
+# merged. Pushing the tag with GH_PAT triggers release.yml, which builds the
+# wheels and publishes to PyPI and crates.io. Tags pushed with the default
+# GITHUB_TOKEN would not trigger release.yml, hence the PAT.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'auto/data-update'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Read version from Cargo.toml
+        id: version
+        run: |
+          VERSION=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Push release tag
+        run: |
+          TAG="v${{ steps.version.outputs.value }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null 2>&1; then
+            echo "Tag $TAG already exists; skipping."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "Pushed $TAG — release.yml will publish to PyPI and crates.io."

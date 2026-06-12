@@ -235,6 +235,32 @@ mod tests {
     }
 
     #[test]
+    fn should_include_zips_from_issue_23() {
+        // https://github.com/seanpianka/Zipcodes/issues/23
+        assert!(is_real("85144").unwrap());
+    }
+
+    #[test]
+    fn database_invariants() {
+        let db = database();
+        assert!(
+            db.len() > 40_000 && db.len() < 50_000,
+            "unexpected database size: {}",
+            db.len()
+        );
+        let zips: Vec<&str> = db.iter().map(|z| z.zip_code.as_str()).collect();
+        let mut sorted = zips.clone();
+        sorted.sort_unstable();
+        assert_eq!(zips, sorted, "database must be sorted by zip_code");
+        let unique: std::collections::HashSet<_> = zips.iter().collect();
+        assert_eq!(
+            unique.len(),
+            zips.len(),
+            "database must not contain duplicate zip codes"
+        );
+    }
+
+    #[test]
     fn should_not_find_fake_zipcodes() {
         assert!(!is_real("91239").unwrap());
     }

@@ -216,7 +216,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
 name = "zipcodes"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "bzip2",
  "serde",
@@ -226,7 +226,7 @@ dependencies = [
 
 [[package]]
 name = "zipcodes-py"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "pyo3",
  "serde_json",

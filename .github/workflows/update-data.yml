@@ -1,0 +1,158 @@
+name: Update Zipcode Data
+
+# Monthly automated refresh of the embedded zipcode database (issues #7, #23).
+#
+# Downloads the USPS ZIP Locale Detail file and the GeoNames US postal dataset,
+# rebuilds zips.json.bz2 on top of the committed base CSV, and — if anything
+# changed — bumps the patch version and opens a pull request. Merging that PR
+# triggers auto-release.yml, which tags the release and publishes to PyPI and
+# crates.io via release.yml.
+#
+# Requires the GH_PAT repository secret (fine-grained PAT with Contents and
+# Pull requests read/write). The default GITHUB_TOKEN cannot be used: events
+# it creates do not trigger other workflows, so the PR would get no CI run.
+
+on:
+  schedule:
+    - cron: "0 6 1 * *" # 06:00 UTC on the 1st of every month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install Python dependencies
+        run: pip install xlrd
+
+      - name: Download GeoNames US postal data
+        run: curl -fsSL --retry 3 "https://download.geonames.org/export/zip/US.zip" -o /tmp/geonames_us.zip
+
+      - name: Download USPS ZIP Locale Detail
+        run: |
+          python3 - <<'EOF'
+          import re
+          import sys
+          import urllib.request
+
+          PAGE = "https://postalpro.usps.com/ZIP_Locale_Detail"
+          request = urllib.request.Request(PAGE, headers={"User-Agent": "Mozilla/5.0"})
+          page = urllib.request.urlopen(request, timeout=60).read().decode("utf-8", errors="replace")
+          match = re.search(r'href="(/mnt/glusterfs/[^"]+ZIP_Locale_Detail\.xls)"', page)
+          if not match:
+              sys.exit(f"FATAL: no ZIP_Locale_Detail.xls link found on {PAGE}; has the page layout changed?")
+          url = "https://postalpro.usps.com" + match.group(1)
+          print(f"Downloading {url}")
+          request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+          with open("/tmp/usps_zip_locale.xls", "wb") as f:
+              f.write(urllib.request.urlopen(request, timeout=120).read())
+          EOF
+
+      - name: Rebuild zipcode database
+        run: |
+          python3 scripts/update_zipcode_dataset.py \
+            --base scripts/data/zip_code_database.csv \
+            --gps scripts/data/zip-codes-database-FREE.csv \
+            --geonames-zip /tmp/geonames_us.zip \
+            --usps-xls /tmp/usps_zip_locale.xls \
+            --output-bz2 crates/zipcodes/src/zips.json.bz2 \
+            --summary-output /tmp/change_summary.json
+
+      - name: Detect changes
+        id: changed
+        run: |
+          if git diff --quiet -- crates/zipcodes/src/zips.json.bz2; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Zipcode database is unchanged; nothing to do."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run tests against new data
+        if: steps.changed.outputs.changed == 'true'
+        run: cargo test -p zipcodes
+
+      - name: Bump patch version
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          CURRENT=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+          sed -i "0,/^version = \"$CURRENT\"/s//version = \"$NEW_VERSION\"/" Cargo.toml
+          cargo check --workspace --quiet # refresh Cargo.lock
+          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_ENV"
+          echo "Version: $CURRENT -> $NEW_VERSION"
+
+      - name: Build PR body
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          python3 - <<'EOF'
+          import json
+          import os
+
+          with open("/tmp/change_summary.json") as f:
+              summary = json.load(f)
+
+          def sample_block(title, sample):
+              if not sample:
+                  return []
+              return ["### " + title, "```json", json.dumps(sample, indent=1), "```", ""]
+
+          lines = [
+              "Automated monthly zipcode database update (#7).",
+              "",
+              f"**Version:** {os.environ['NEW_VERSION']}",
+              f"**Records:** {summary['total_before']:,} -> {summary['total_after']:,}",
+              f"**Added:** {summary['added_count']} | **Removed:** {summary['removed_count']} | **Modified:** {summary['modified_count']}",
+              "",
+              *sample_block("Sample added zipcodes", summary["added_sample"]),
+              *sample_block("Sample removed zipcodes", summary["removed_sample"]),
+              *sample_block("Sample modified zipcodes", summary["modified_sample"][:5]),
+              "Merging this PR tags and publishes a patch release to PyPI and crates.io.",
+              "",
+              "Data sources: USPS ZIP Locale Detail (public domain) and [GeoNames](https://www.geonames.org/) (CC BY 4.0).",
+          ]
+          with open("/tmp/pr_body.md", "w") as f:
+              f.write("\n".join(lines))
+          EOF
+
+      - name: Close superseded data-update PR
+        if: steps.changed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          for pr in $(gh pr list --state open --head auto/data-update --json number --jq '.[].number'); do
+            echo "Closing superseded PR #$pr"
+            gh pr close "$pr" --comment "Superseded by a newer automated data update." --delete-branch
+          done
+
+      - name: Open pull request
+        if: steps.changed.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GH_PAT }}
+          branch: auto/data-update
+          base: master
+          title: "data: monthly zipcode update (v${{ env.NEW_VERSION }})"
+          body-path: /tmp/pr_body.md
+          labels: data-update
+          commit-message: "data: monthly zipcode update (v${{ env.NEW_VERSION }})"
+          add-paths: |
+            crates/zipcodes/src/zips.json.bz2
+            Cargo.toml
+            Cargo.lock
