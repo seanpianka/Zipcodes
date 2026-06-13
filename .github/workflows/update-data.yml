@@ -38,38 +38,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install Python dependencies
-        run: pip install xlrd
-
-      - name: Download GeoNames US postal data
-        run: curl -fsSL --retry 3 "https://download.geonames.org/export/zip/US.zip" -o /tmp/geonames_us.zip
-
-      - name: Download USPS ZIP Locale Detail
-        run: |
-          python3 - <<'EOF'
-          import re
-          import sys
-          import urllib.request
-
-          PAGE = "https://postalpro.usps.com/ZIP_Locale_Detail"
-          request = urllib.request.Request(PAGE, headers={"User-Agent": "Mozilla/5.0"})
-          page = urllib.request.urlopen(request, timeout=60).read().decode("utf-8", errors="replace")
-          match = re.search(r'href="(/mnt/glusterfs/[^"]+ZIP_Locale_Detail\.xls)"', page)
-          if not match:
-              sys.exit(f"FATAL: no ZIP_Locale_Detail.xls link found on {PAGE}; has the page layout changed?")
-          url = "https://postalpro.usps.com" + match.group(1)
-          print(f"Downloading {url}")
-          request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-          with open("/tmp/usps_zip_locale.xls", "wb") as f:
-              f.write(urllib.request.urlopen(request, timeout=120).read())
-          EOF
+        run: pip install -r scripts/requirements.txt
 
       - name: Rebuild zipcode database
         run: |
           python3 scripts/update_zipcode_dataset.py \
             --base scripts/data/zip_code_database.csv \
             --gps scripts/data/zip-codes-database-FREE.csv \
-            --geonames-zip /tmp/geonames_us.zip \
-            --usps-xls /tmp/usps_zip_locale.xls \
+            --fetch-geonames --geonames-zip /tmp/geonames_us.zip \
+            --fetch-usps --usps-xls /tmp/usps_zip_locale.xls \
             --output-bz2 crates/zipcodes/src/zips.json.bz2 \
             --summary-output /tmp/change_summary.json
 

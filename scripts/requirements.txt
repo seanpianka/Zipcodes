@@ -1,0 +1,3 @@
+# Dependencies for scripts/update_zipcode_dataset.py (the data pipeline only;
+# deliberately not a pyproject.toml extra, which would build the Rust extension).
+xlrd>=2.0

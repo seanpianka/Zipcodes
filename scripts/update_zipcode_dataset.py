@@ -1,10 +1,8 @@
 """Rebuild the embedded zipcode database from the committed base CSV plus
-freshly downloaded USPS and GeoNames data.
+downloaded USPS and GeoNames data.
 
-This is the automated counterpart to ``build_zipcode_dataset.py`` (the legacy
-manual pipeline). It is a pure function of its inputs and produces
-byte-identical output for identical inputs, so a no-change month yields an
-unchanged ``zips.json.bz2``.
+This is a pure function of its inputs and produces byte-identical output for
+identical inputs, so a no-change month yields an unchanged ``zips.json.bz2``.
 
 Pipeline:
   1. Load the rich base CSV (unitedstateszipcodes.org, committed in-repo —
@@ -19,12 +17,16 @@ Usage:
   python scripts/update_zipcode_dataset.py \
     --base scripts/data/zip_code_database.csv \
     --gps scripts/data/zip-codes-database-FREE.csv \
-    --geonames-zip /tmp/geonames_us.zip \
-    --usps-xls /tmp/usps_zip_locale.xls \
+    --fetch-geonames --geonames-zip /tmp/geonames_us.zip \
+    --fetch-usps --usps-xls /tmp/usps_zip_locale.xls \
     --output-bz2 crates/zipcodes/src/zips.json.bz2 \
     --summary-output /tmp/change_summary.json
 
-Requires: xlrd (the USPS file is the legacy binary .xls format).
+The ``--fetch-*`` flags download GeoNames/USPS to the given paths first; omit
+them to run offline against pre-downloaded files.
+
+Requires: ``pip install -r scripts/requirements.txt`` (xlrd — the USPS file is
+the legacy binary .xls format). Downloads use only the stdlib.
 """
 
 import argparse
@@ -32,13 +34,15 @@ import bz2
 import csv
 import json
 import math
+import re
 import sys
+import urllib.request
 import zipfile
 
 import xlrd
 
-# Canonical key order of records in zips.json (matches the historical output
-# of build_zipcode_dataset.py, which followed the base CSV's column order).
+# Canonical key order of records in zips.json (matches the historical output,
+# which followed the base CSV's column order).
 FIELD_ORDER = [
     "zip_code",
     "zip_code_type",
@@ -91,6 +95,41 @@ MIN_GEONAMES_ROWS = 40_000
 MIN_USPS_ZIPS = 30_000
 MAX_COUNT_DRIFT = 0.05
 SAMPLE_LIMIT = 10
+
+GEONAMES_URL = "https://download.geonames.org/export/zip/US.zip"
+USPS_PAGE = "https://postalpro.usps.com/ZIP_Locale_Detail"
+DOWNLOAD_ATTEMPTS = 3
+
+
+def fetch(url, timeout, headers=None):
+    """GET a URL with up to DOWNLOAD_ATTEMPTS tries (curl --retry 3 equivalent)."""
+    request = urllib.request.Request(url, headers=headers or {})
+    for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
+        try:
+            return urllib.request.urlopen(request, timeout=timeout).read()
+        except OSError as e:
+            if attempt == DOWNLOAD_ATTEMPTS:
+                raise
+            print(f"download attempt {attempt} of {url} failed ({e}); retrying", file=sys.stderr)
+
+
+def download_geonames(output_path):
+    print(f"Downloading {GEONAMES_URL}")
+    with open(output_path, "wb") as f:
+        f.write(fetch(GEONAMES_URL, timeout=120))
+
+
+def download_usps(output_path):
+    """Scrape the USPS ZIP Locale Detail page for the .xls link and download it."""
+    headers = {"User-Agent": "Mozilla/5.0"}
+    page = fetch(USPS_PAGE, timeout=60, headers=headers).decode("utf-8", errors="replace")
+    match = re.search(r'href="(/mnt/glusterfs/[^"]+ZIP_Locale_Detail\.xls)"', page)
+    if not match:
+        sys.exit(f"FATAL: no ZIP_Locale_Detail.xls link found on {USPS_PAGE}; has the page layout changed?")
+    url = "https://postalpro.usps.com" + match.group(1)
+    print(f"Downloading {url}")
+    with open(output_path, "wb") as f:
+        f.write(fetch(url, timeout=120, headers=headers))
 
 
 def split_by_comma(s):
@@ -385,6 +424,8 @@ def main():
     parser.add_argument("--gps", default="scripts/data/zip-codes-database-FREE.csv", help="committed zip-codes.com GPS overlay CSV")
     parser.add_argument("--geonames-zip", required=True, help="GeoNames US.zip (download.geonames.org/export/zip/US.zip)")
     parser.add_argument("--usps-xls", required=True, help="USPS ZIP Locale Detail .xls (postalpro.usps.com/ZIP_Locale_Detail)")
+    parser.add_argument("--fetch-geonames", action="store_true", help="download GeoNames US.zip to --geonames-zip first")
+    parser.add_argument("--fetch-usps", action="store_true", help="download the USPS ZIP Locale Detail .xls to --usps-xls first")
     parser.add_argument("--output-bz2", required=True, help="path of the embedded database to diff against and overwrite")
     parser.add_argument("--summary-output", required=True, help="where to write the JSON change summary")
     parser.add_argument(
@@ -393,6 +434,11 @@ def main():
         help="set active=false on ZIPs absent from the USPS list (off by default)",
     )
     args = parser.parse_args()
+
+    if args.fetch_geonames:
+        download_geonames(args.geonames_zip)
+    if args.fetch_usps:
+        download_usps(args.usps_xls)
 
     previous = load_previous(args.output_bz2)
     geo = load_geonames(args.geonames_zip)
