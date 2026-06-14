@@ -236,7 +236,10 @@ pub fn database() -> &'static [Zipcode] {
     &ZIPCODES
 }
 
-fn clean_zipcode(zipcode: &str) -> Result<&str> {
+/// Validate and normalize a full zipcode (`"#####"`, `"#####-####"`, or
+/// `"##### ####"`): trim surrounding whitespace, require at least five
+/// characters, then take the first five and require them to be ASCII digits.
+pub fn clean_zipcode(zipcode: &str) -> Result<&str> {
     let zipcode = zipcode.trim();
     if zipcode.len() < ZIPCODE_LENGTH {
         return Err(Error::InvalidFormat);
@@ -246,6 +249,22 @@ fn clean_zipcode(zipcode: &str) -> Result<&str> {
         return Err(Error::InvalidCharacters);
     }
     Ok(prefix)
+}
+
+/// Validate a partial zipcode (prefix or fragment): after trimming, require
+/// 1–5 ASCII digits. Longer input is [`Error::InvalidFormat`]; non-digits are
+/// [`Error::InvalidCharacters`]. Empty input is also rejected as
+/// [`Error::InvalidFormat`] (the Python shim guards it earlier with a
+/// `TypeError`), so this never returns `Ok("")`.
+pub fn clean_prefix(partial: &str) -> Result<&str> {
+    let partial = partial.trim();
+    if partial.is_empty() || partial.len() > ZIPCODE_LENGTH {
+        return Err(Error::InvalidFormat);
+    }
+    if !partial.chars().all(|c| c.is_ascii_digit()) {
+        return Err(Error::InvalidCharacters);
+    }
+    Ok(partial)
 }
 
 #[cfg(test)]
@@ -337,6 +356,40 @@ mod tests {
             matching("1234a", None),
             Err(Error::InvalidCharacters)
         ));
+    }
+
+    #[test]
+    fn clean_zipcode_normalizes_valid_input() {
+        assert_eq!(clean_zipcode("12345").unwrap(), "12345");
+        assert_eq!(clean_zipcode("12345-6789").unwrap(), "12345");
+        assert_eq!(clean_zipcode("12345 6789").unwrap(), "12345");
+        assert_eq!(clean_zipcode("  06903  ").unwrap(), "06903");
+    }
+
+    #[test]
+    fn clean_zipcode_rejects_invalid_input() {
+        assert!(matches!(clean_zipcode("123"), Err(Error::InvalidFormat)));
+        assert!(matches!(clean_zipcode("   "), Err(Error::InvalidFormat)));
+        assert!(matches!(
+            clean_zipcode("1234a"),
+            Err(Error::InvalidCharacters)
+        ));
+    }
+
+    #[test]
+    fn clean_prefix_accepts_one_to_five_digits() {
+        for p in ["1", "12", "123", "1234", "12345"] {
+            assert_eq!(clean_prefix(p).unwrap(), p);
+        }
+        assert_eq!(clean_prefix("  10  ").unwrap(), "10");
+    }
+
+    #[test]
+    fn clean_prefix_rejects_invalid_input() {
+        assert!(matches!(clean_prefix("123456"), Err(Error::InvalidFormat)));
+        assert!(matches!(clean_prefix(""), Err(Error::InvalidFormat)));
+        assert!(matches!(clean_prefix("   "), Err(Error::InvalidFormat)));
+        assert!(matches!(clean_prefix("10a"), Err(Error::InvalidCharacters)));
     }
 
     #[test]

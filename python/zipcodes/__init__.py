@@ -11,7 +11,6 @@ All queries — full-database scans and ``zips=`` chaining lists alike — run i
 the compiled Rust extension (``zipcodes._zipcodes``); this module preserves
 the exact 1.x behavior for argument validation and exceptions.
 """
-import re
 import warnings
 
 from zipcodes import _zipcodes
@@ -20,9 +19,6 @@ __author__ = "Sean Pianka"
 __email__ = "pianka@eml.cc"
 __license__ = "MIT"
 __version__ = _zipcodes.__version__
-
-_digits = re.compile(r"[^\d\-]")
-_valid_zipcode_length = 5
 
 _zips_cache = None
 
@@ -42,45 +38,41 @@ def __getattr__(name):
     raise AttributeError("module {!r} has no attribute {!r}".format(__name__, name))
 
 
-def _clean_zipcode(fn):
-    def decorator(zipcode, *args, **kwargs):
-        if not zipcode or not isinstance(zipcode, str):
-            raise TypeError("Invalid type, zipcode must be a string.")
-
-        return fn(
-            _clean(zipcode, min(len(zipcode), _valid_zipcode_length)), *args, **kwargs
-        )
-
-    return decorator
+def _require_str(zipcode):
+    # The only validation that must stay in Python: PyO3's auto-generated
+    # TypeError for a non-str argument has a different message than 1.x. All
+    # format/character validation lives in the Rust core.
+    if not zipcode or not isinstance(zipcode, str):
+        raise TypeError("Invalid type, zipcode must be a string.")
 
 
-@_clean_zipcode
 def matching(zipcode, zips=None):
     """Retrieve zipcode dict for provided zipcode"""
+    _require_str(zipcode)
     return _zipcodes.matching(zipcode, zips=zips)
 
 
-@_clean_zipcode
 def is_valid(zipcode):
+    _require_str(zipcode)
     warnings.warn("is_valid is deprecated; use is_real", DeprecationWarning, stacklevel=2)
     return is_real(zipcode)
 
 
-@_clean_zipcode
 def is_real(zipcode):
     """Determine whether a given zip or zip+4 zipcode is real."""
+    _require_str(zipcode)
     return _zipcodes.is_real(zipcode)
 
 
-@_clean_zipcode
 def similar_to(partial_zipcode, zips=None):
     """List of zipcode dicts where zipcode prefix matches `partial_zipcode`"""
+    _require_str(partial_zipcode)
     return _zipcodes.similar_to(partial_zipcode, zips=zips)
 
 
-@_clean_zipcode
 def contains(partial_zipcode, zips=None):
     """List of zipcode dicts where zipcode contains `partial_zipcode` fragment"""
+    _require_str(partial_zipcode)
     return _zipcodes.contains(partial_zipcode, zips=zips)
 
 
@@ -127,22 +119,3 @@ def list_all(zips=None):
     if zips is None:
         return _load_zips()
     return zips
-
-
-def _contains_nondigits(s):
-    return bool(_digits.search(s))
-
-
-def _clean(zipcode, valid_length=_valid_zipcode_length):
-    """Assumes zipcode is of type `str`"""
-    zipcode = zipcode.split("-")[0]  # Convert #####-#### to #####
-
-    if len(zipcode) != valid_length:
-        raise ValueError(
-            'Invalid format, zipcode must be of the format: "#####" or "#####-####"'
-        )
-
-    if _contains_nondigits(zipcode):
-        raise ValueError('Invalid characters, zipcode may only contain digits and "-".')
-
-    return zipcode

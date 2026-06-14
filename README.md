@@ -83,6 +83,17 @@ $ cargo add zipcodes
 - Behavioral notes for upgraders: query results are fresh dicts (mutating a
   result no longer mutates the shared database list), and
   `filter_by(active=1)` no longer matches `active=True` (pass a bool).
+- **Unified validation.** Input validation now lives once, in the Rust core,
+  instead of a separate Python validator. This changes a few edge cases:
+  - **Breaking:** `is_real`/`matching` now raise `ValueError` for input shorter
+    than five characters (after trimming), instead of returning `False`/`[]`.
+  - **Relaxations:** surrounding whitespace (`"  06903  "`) and space-separated
+    Zip+4 (`"12345 6789"`) are now accepted; any input of five or more
+    characters is normalized to its first five digits, generalizing the
+    existing `#####-####` handling.
+  - **Private API removal:** the undocumented helpers `zipcodes._clean` and
+    `zipcodes._contains_nondigits` (and the `_digits`/`_valid_zipcode_length`
+    module attributes) no longer exist.
 
 ## Zipcode Data
 
@@ -185,7 +196,7 @@ Traceback (most recent call last):
   ...
 ValueError: Invalid characters, zipcode may only contain digits and "-".
 
->>> zipcodes.matching('064690')
+>>> zipcodes.matching('0646')
 Traceback (most recent call last):
   ...
 ValueError: Invalid format, zipcode must be of the format: "#####" or "#####-####"

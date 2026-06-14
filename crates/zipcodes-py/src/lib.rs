@@ -12,6 +12,13 @@ use pyo3::types::{PyBool, PyDict, PyList};
 use serde_json::Value;
 use zipcodes::Zipcode;
 
+/// Map a core validation error to the 1.x `ValueError`, preserving its message
+/// verbatim. A free helper rather than `impl From<zipcodes::Error> for PyErr`
+/// because both types are foreign to this crate (orphan rule).
+fn to_py_err(e: zipcodes::Error) -> PyErr {
+    PyValueError::new_err(e.to_string())
+}
+
 /// Build a dict in `zipcodes::FIELD_ORDER` order (the 1.x pure-Python key order).
 ///
 /// This is hand-written rather than derived from `serde_json::to_value` on
@@ -110,7 +117,6 @@ fn py_to_json(value: &Bound<'_, PyAny>) -> Option<Value> {
     None
 }
 
-/// `zipcode` arrives pre-validated by the Python shim (digits only, length <= 5).
 #[pyfunction]
 #[pyo3(signature = (zipcode, zips=None))]
 fn matching<'py>(
@@ -120,19 +126,21 @@ fn matching<'py>(
 ) -> PyResult<Bound<'py, PyList>> {
     match zips {
         None => {
-            let found = zipcodes::matching(zipcode, None)
-                .map_err(|e| PyValueError::new_err(e.to_string()))?;
+            let found = zipcodes::matching(zipcode, None).map_err(to_py_err)?;
             to_pylist(py, &found)
         }
-        Some(zips) => filter_pylist(py, &zips, |item| {
-            get_str(item, "zip_code").as_deref() == Some(zipcode)
-        }),
+        Some(zips) => {
+            let zipcode = zipcodes::clean_zipcode(zipcode).map_err(to_py_err)?;
+            filter_pylist(py, &zips, |item| {
+                get_str(item, "zip_code").as_deref() == Some(zipcode)
+            })
+        }
     }
 }
 
 #[pyfunction]
-fn is_real(zipcode: &str) -> bool {
-    zipcodes::database().iter().any(|z| z.zip_code == zipcode)
+fn is_real(zipcode: &str) -> PyResult<bool> {
+    zipcodes::is_real(zipcode).map_err(to_py_err)
 }
 
 #[pyfunction]
@@ -142,6 +150,7 @@ fn similar_to<'py>(
     prefix: &str,
     zips: Option<Bound<'py, PyList>>,
 ) -> PyResult<Bound<'py, PyList>> {
+    let prefix = zipcodes::clean_prefix(prefix).map_err(to_py_err)?;
     match zips {
         None => to_pylist(py, &zipcodes::similar_to(prefix, None)),
         Some(zips) => filter_pylist(py, &zips, |item| {
@@ -157,6 +166,7 @@ fn contains<'py>(
     fragment: &str,
     zips: Option<Bound<'py, PyList>>,
 ) -> PyResult<Bound<'py, PyList>> {
+    let fragment = zipcodes::clean_prefix(fragment).map_err(to_py_err)?;
     match zips {
         None => to_pylist(py, &zipcodes::contains(fragment, None)),
         Some(zips) => filter_pylist(py, &zips, |item| {

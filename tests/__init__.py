@@ -80,15 +80,6 @@ unittests_schema = [
             lambda: zipcodes.is_real("06905"),
             # https://github.com/seanpianka/Zipcodes/issues/23
             lambda: zipcodes.is_real("85144"),
-            lambda: zipcodes._contains_nondigits("1234a"),
-            # bad length
-            lambda: callable_raise_exc(
-                lambda: zipcodes._clean("000000"), ValueError
-            ),
-            # bad characters
-            lambda: callable_raise_exc(
-                lambda: zipcodes._clean("0000a"), ValueError
-            ),
             # ensure zips argument works
             lambda: len(
                 zipcodes.similar_to(
@@ -103,19 +94,12 @@ unittests_schema = [
         "assertion": lambda self: self.assertFalse,
         "predicates": [
             lambda: zipcodes.is_real("91239"),
-            # digits and "-" are acceptable
-            lambda: zipcodes._contains_nondigits("12345"),
-            lambda: zipcodes._contains_nondigits("1234-"),
         ],
     },
     {
         "name": "equal",
         "assertion": lambda self: self.assertEqual,
         "predicates": [
-            # valid_zipcode_length parameter
-            (lambda: zipcodes._clean("0646", 4), lambda: "0646"),
-            # default behavior
-            (lambda: zipcodes._clean("06469"), lambda: "06469"),
             (lambda: zipcodes.list_all(), lambda: zipcodes._zips),
             (
                 lambda: zipcodes.filter_by(city="Old Saybrook"),
