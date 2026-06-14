@@ -7,13 +7,12 @@ No-SQLite U.S. zipcode validation Python package, ready for use in AWS Lambda
 :author: Sean Pianka
 :github: @seanpianka
 
-The full-database scans run in the compiled Rust extension
-(``zipcodes._zipcodes``); this module preserves the exact 1.x behavior for
-argument validation, exceptions, and the ``zips=`` chaining lists.
+All queries — full-database scans and ``zips=`` chaining lists alike — run in
+the compiled Rust extension (``zipcodes._zipcodes``); this module preserves
+the exact 1.x behavior for argument validation and exceptions.
 """
 import re
 import warnings
-from math import asin, cos, radians, sin, sqrt
 
 from zipcodes import _zipcodes
 
@@ -58,9 +57,7 @@ def _clean_zipcode(fn):
 @_clean_zipcode
 def matching(zipcode, zips=None):
     """Retrieve zipcode dict for provided zipcode"""
-    if zips is None:
-        return _zipcodes.matching(zipcode)
-    return [z for z in zips if z["zip_code"] == zipcode]
+    return _zipcodes.matching(zipcode, zips=zips)
 
 
 @_clean_zipcode
@@ -78,17 +75,13 @@ def is_real(zipcode):
 @_clean_zipcode
 def similar_to(partial_zipcode, zips=None):
     """List of zipcode dicts where zipcode prefix matches `partial_zipcode`"""
-    if zips is None:
-        return _zipcodes.similar_to(partial_zipcode)
-    return [z for z in zips if z["zip_code"].startswith(partial_zipcode)]
+    return _zipcodes.similar_to(partial_zipcode, zips=zips)
 
 
 @_clean_zipcode
 def contains(partial_zipcode, zips=None):
     """List of zipcode dicts where zipcode contains `partial_zipcode` fragment"""
-    if zips is None:
-        return _zipcodes.contains(partial_zipcode)
-    return [z for z in zips if partial_zipcode in z["zip_code"]]
+    return _zipcodes.contains(partial_zipcode, zips=zips)
 
 
 def filter_by_state(state, zips=None):
@@ -116,36 +109,17 @@ def haversine(lon1, lat1, lon2, lat2):
     Calculate the great circle distance in miles between two points
     on the earth (specified in decimal degrees)
     """
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-    c = 2 * asin(sqrt(a))
-    r = 3956  # Radius of earth in miles. Use 6371 for kilometers.
-    return c * r
+    return _zipcodes.haversine(lon1, lat1, lon2, lat2)
 
 
 def filter_by_coordinates(lat, long, radius_in_miles=10, zips=None):
     """List of zipcode dicts within `radius_in_miles` of (`lat`, `long`)."""
-    if zips is None:
-        return _zipcodes.filter_by_coordinates(lat, long, radius_in_miles)
-    return [
-        z
-        for z in zips
-        if haversine(float(z["long"]), float(z["lat"]), long, lat) <= radius_in_miles
-    ]
+    return _zipcodes.filter_by_coordinates(lat, long, radius_in_miles, zips=zips)
 
 
 def filter_by(zips=None, **filters):
     """Use `kwargs` to select for desired attributes from list of zipcode dicts"""
-    if zips is None:
-        return _zipcodes.filter_by(**filters)
-    return [
-        z
-        for z in zips
-        if all(key in z and z[key] == value for key, value in filters.items())
-    ]
+    return _zipcodes.filter_by(zips, **filters)
 
 
 def list_all(zips=None):

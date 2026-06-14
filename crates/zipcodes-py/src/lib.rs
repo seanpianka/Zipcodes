@@ -1,10 +1,12 @@
 //! Native module `zipcodes._zipcodes`.
 //!
-//! The Python-facing compat layer (validation, exact 1.x exception messages,
-//! `zips=` chaining over caller-supplied dicts) lives in
-//! `python/zipcodes/__init__.py`; this module only handles scans over the
-//! embedded database, materializing matching records as Python dicts.
+//! Database scans delegate to the `zipcodes` crate's query functions, and the
+//! `zips=` override path (chaining filters over previously returned dicts) is
+//! filtered here in Rust, so the crate is the single implementation of scan
+//! semantics. The Python-facing compat layer (argument validation, exact 1.x
+//! exception messages) lives in `python/zipcodes/__init__.py`.
 
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBool, PyDict, PyList};
 use serde_json::Value;
@@ -30,16 +32,44 @@ fn to_dict<'py>(py: Python<'py>, z: &Zipcode) -> PyResult<Bound<'py, PyDict>> {
     Ok(dict)
 }
 
-fn collect<'py, F>(py: Python<'py>, predicate: F) -> PyResult<Bound<'py, PyList>>
-where
-    F: Fn(&Zipcode) -> bool,
-{
-    let dicts = zipcodes::database()
+/// Convert crate query results to a list of dicts (1.x field order).
+fn to_pylist<'py>(py: Python<'py>, zips: &[Zipcode]) -> PyResult<Bound<'py, PyList>> {
+    let dicts = zips
         .iter()
-        .filter(|z| predicate(z))
         .map(|z| to_dict(py, z))
         .collect::<PyResult<Vec<_>>>()?;
     PyList::new(py, dicts)
+}
+
+/// Filter a caller-supplied list of dicts, returning the matching items as-is
+/// (no deserialization round-trip, no re-ordering of caller keys). The
+/// predicate treats any per-item failure (missing key, non-dict item,
+/// inconvertible value) as "not a match".
+fn filter_pylist<'py, F>(
+    py: Python<'py>,
+    zips: &Bound<'py, PyList>,
+    pred: F,
+) -> PyResult<Bound<'py, PyList>>
+where
+    F: Fn(&Bound<'py, PyAny>) -> bool,
+{
+    let matches: Vec<_> = zips.iter().filter(|item| pred(item)).collect();
+    PyList::new(py, matches)
+}
+
+/// Extract `item[key]` as a string; `None` on a missing key or non-string value.
+fn get_str(item: &Bound<'_, PyAny>, key: &str) -> Option<String> {
+    item.get_item(key).ok()?.extract::<String>().ok()
+}
+
+/// Extract `item[key]` as a coordinate, accepting str or float values as the
+/// 1.x `float(z["lat"])` did.
+fn get_coordinate(item: &Bound<'_, PyAny>, key: &str) -> Option<f64> {
+    let value = item.get_item(key).ok()?;
+    if let Ok(f) = value.extract::<f64>() {
+        return Some(f);
+    }
+    value.extract::<String>().ok()?.parse::<f64>().ok()
 }
 
 /// Convert a Python filter value to JSON for comparison against record fields.
@@ -73,8 +103,22 @@ fn py_to_json(value: &Bound<'_, PyAny>) -> Option<Value> {
 
 /// `zipcode` arrives pre-validated by the Python shim (digits only, length <= 5).
 #[pyfunction]
-fn matching<'py>(py: Python<'py>, zipcode: &str) -> PyResult<Bound<'py, PyList>> {
-    collect(py, |z| z.zip_code == zipcode)
+#[pyo3(signature = (zipcode, zips=None))]
+fn matching<'py>(
+    py: Python<'py>,
+    zipcode: &str,
+    zips: Option<Bound<'py, PyList>>,
+) -> PyResult<Bound<'py, PyList>> {
+    match zips {
+        None => {
+            let found = zipcodes::matching(zipcode, None)
+                .map_err(|e| PyValueError::new_err(e.to_string()))?;
+            to_pylist(py, &found)
+        }
+        Some(zips) => filter_pylist(py, &zips, |item| {
+            get_str(item, "zip_code").as_deref() == Some(zipcode)
+        }),
+    }
 }
 
 #[pyfunction]
@@ -83,19 +127,40 @@ fn is_real(zipcode: &str) -> bool {
 }
 
 #[pyfunction]
-fn similar_to<'py>(py: Python<'py>, prefix: &str) -> PyResult<Bound<'py, PyList>> {
-    collect(py, |z| z.zip_code.starts_with(prefix))
+#[pyo3(signature = (prefix, zips=None))]
+fn similar_to<'py>(
+    py: Python<'py>,
+    prefix: &str,
+    zips: Option<Bound<'py, PyList>>,
+) -> PyResult<Bound<'py, PyList>> {
+    match zips {
+        None => to_pylist(py, &zipcodes::similar_to(prefix, None)),
+        Some(zips) => filter_pylist(py, &zips, |item| {
+            get_str(item, "zip_code").is_some_and(|zc| zc.starts_with(prefix))
+        }),
+    }
 }
 
 #[pyfunction]
-fn contains<'py>(py: Python<'py>, fragment: &str) -> PyResult<Bound<'py, PyList>> {
-    collect(py, |z| z.zip_code.contains(fragment))
+#[pyo3(signature = (fragment, zips=None))]
+fn contains<'py>(
+    py: Python<'py>,
+    fragment: &str,
+    zips: Option<Bound<'py, PyList>>,
+) -> PyResult<Bound<'py, PyList>> {
+    match zips {
+        None => to_pylist(py, &zipcodes::contains(fragment, None)),
+        Some(zips) => filter_pylist(py, &zips, |item| {
+            get_str(item, "zip_code").is_some_and(|zc| zc.contains(fragment))
+        }),
+    }
 }
 
 #[pyfunction]
-#[pyo3(signature = (**kwargs))]
+#[pyo3(signature = (zips=None, **kwargs))]
 fn filter_by<'py>(
     py: Python<'py>,
+    zips: Option<Bound<'py, PyList>>,
     kwargs: Option<&Bound<'py, PyDict>>,
 ) -> PyResult<Bound<'py, PyList>> {
     let mut filters = Vec::new();
@@ -110,25 +175,45 @@ fn filter_by<'py>(
             }
         }
     }
-    let filters = filters; // freeze for the closure
-    collect(py, |z| filters.iter().all(|(k, v)| z.field_matches(k, v)))
+    match zips {
+        None => to_pylist(py, &zipcodes::filter_by_fields(&filters, None)),
+        // Both sides of the comparison go through `py_to_json`, never Python
+        // rich comparison, so e.g. `active=1` does not match a True field.
+        Some(zips) => filter_pylist(py, &zips, |item| {
+            filters.iter().all(|(key, value)| {
+                item.get_item(key.as_str())
+                    .ok()
+                    .and_then(|v| py_to_json(&v))
+                    .as_ref()
+                    == Some(value)
+            })
+        }),
+    }
 }
 
 #[pyfunction]
+#[pyo3(signature = (lat, long, radius_in_miles, zips=None))]
 fn filter_by_coordinates<'py>(
     py: Python<'py>,
     lat: f64,
     long: f64,
     radius_in_miles: f64,
+    zips: Option<Bound<'py, PyList>>,
 ) -> PyResult<Bound<'py, PyList>> {
-    collect(py, |z| {
-        match (z.lat.parse::<f64>(), z.long.parse::<f64>()) {
-            (Ok(z_lat), Ok(z_long)) => {
-                zipcodes::haversine(z_long, z_lat, long, lat) <= radius_in_miles
+    match zips {
+        None => to_pylist(
+            py,
+            &zipcodes::filter_by_coordinates(lat, long, radius_in_miles, None),
+        ),
+        Some(zips) => filter_pylist(py, &zips, |item| {
+            match (get_coordinate(item, "lat"), get_coordinate(item, "long")) {
+                (Some(z_lat), Some(z_long)) => {
+                    zipcodes::haversine(z_long, z_lat, long, lat) <= radius_in_miles
+                }
+                _ => false,
             }
-            _ => false,
-        }
-    })
+        }),
+    }
 }
 
 #[pyfunction]
@@ -138,7 +223,7 @@ fn haversine(lon1: f64, lat1: f64, lon2: f64, lat2: f64) -> f64 {
 
 #[pyfunction]
 fn list_all<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
-    collect(py, |_| true)
+    to_pylist(py, zipcodes::database())
 }
 
 #[pymodule]
