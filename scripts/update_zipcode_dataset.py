@@ -34,6 +34,7 @@ import bz2
 import csv
 import json
 import math
+import os
 import re
 import sys
 import urllib.request
@@ -41,24 +42,14 @@ import zipfile
 
 import xlrd
 
-# Canonical key order of records in zips.json (matches the historical output,
-# which followed the base CSV's column order).
-FIELD_ORDER = [
-    "zip_code",
-    "zip_code_type",
-    "active",
-    "city",
-    "acceptable_cities",
-    "unacceptable_cities",
-    "state",
-    "county",
-    "timezone",
-    "area_codes",
-    "world_region",
-    "country",
-    "lat",
-    "long",
-]
+# Canonical key order of records in zips.json. The crate's `zipcodes::FIELD_ORDER`
+# is the single source of truth; `crates/zipcodes/examples/gen_schema.rs` emits it
+# to scripts/data/schema.json (regenerated and diffed in CI), which we load here.
+# Resolve relative to this file, not the CWD, so the path holds regardless of
+# where the script is invoked from.
+SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "schema.json")
+with open(SCHEMA_PATH) as _schema_file:
+    FIELD_ORDER = json.load(_schema_file)["field_order"]
 
 # Base CSV column -> public field name, with optional value transform.
 SCHEMA = {

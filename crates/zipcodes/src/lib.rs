@@ -56,6 +56,31 @@ pub struct Zipcode {
     pub zip_code_type: String,
 }
 
+/// Canonical field order of records in `zips.json` and of the dicts returned by
+/// the Python package. This is the base CSV's historical column order — **not**
+/// alphabetical (the struct above is declared alphabetically; serde matches by
+/// name, so the two need only agree on the field *set*, not its order).
+///
+/// `lat`/`long` are `String` here and round-trip losslessly through serde; if
+/// they ever become `f64`, the serde-based `to_dict` in the Python binding and
+/// the JSON build pipeline must be revisited together.
+pub const FIELD_ORDER: [&str; 14] = [
+    "zip_code",
+    "zip_code_type",
+    "active",
+    "city",
+    "acceptable_cities",
+    "unacceptable_cities",
+    "state",
+    "county",
+    "timezone",
+    "area_codes",
+    "world_region",
+    "country",
+    "lat",
+    "long",
+];
+
 impl Zipcode {
     /// Compare a named field against a JSON value, mirroring the Python
     /// package's `filter_by(**kwargs)` semantics: an unknown field name or a
@@ -227,6 +252,25 @@ fn clean_zipcode(zipcode: &str) -> Result<&str> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn field_order_matches_struct() {
+        // FIELD_ORDER must list exactly the struct's serialized fields. A field
+        // added to one but not the other fails here rather than silently
+        // dropping from the dicts the binding builds.
+        let record = &matching("06903", None).unwrap()[0];
+        let value = serde_json::to_value(record).unwrap();
+        let mut keys: Vec<&str> = value
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        keys.sort_unstable();
+        let mut expected = FIELD_ORDER.to_vec();
+        expected.sort_unstable();
+        assert_eq!(keys, expected);
+    }
 
     #[test]
     fn should_find_real_zipcodes() {

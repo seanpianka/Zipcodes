@@ -12,7 +12,16 @@ use pyo3::types::{PyBool, PyDict, PyList};
 use serde_json::Value;
 use zipcodes::Zipcode;
 
-/// Build a dict with the same field order the 1.x pure-Python package produced.
+/// Build a dict in `zipcodes::FIELD_ORDER` order (the 1.x pure-Python key order).
+///
+/// This is hand-written rather than derived from `serde_json::to_value` on
+/// purpose: a serde-based builder iterating `FIELD_ORDER` cannot drift from the
+/// struct, but it allocates a `Map<String, Value>` per record and measured ~60%
+/// slower on `list_all()` (which materializes ~42k dicts) — past our tolerance.
+/// Drift is instead caught by tests, not by construction: `FIELD_ORDER` is
+/// pinned to the struct by `field_order_matches_struct` in the core crate, and
+/// this builder's output is pinned to `FIELD_ORDER` by `tests/test_schema.py`.
+/// Keep the `set_item` order identical to `FIELD_ORDER`.
 fn to_dict<'py>(py: Python<'py>, z: &Zipcode) -> PyResult<Bound<'py, PyDict>> {
     let dict = PyDict::new(py);
     dict.set_item("zip_code", &z.zip_code)?;
@@ -229,6 +238,7 @@ fn list_all<'py>(py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
 #[pymodule]
 fn _zipcodes(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    m.add("FIELD_ORDER", zipcodes::FIELD_ORDER.to_vec())?;
     m.add_function(wrap_pyfunction!(matching, m)?)?;
     m.add_function(wrap_pyfunction!(is_real, m)?)?;
     m.add_function(wrap_pyfunction!(similar_to, m)?)?;

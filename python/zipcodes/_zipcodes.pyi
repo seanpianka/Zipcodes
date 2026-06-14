@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 __version__: str
+FIELD_ORDER: List[str]
 
 def matching(
     zipcode: str, zips: Optional[List[Dict[str, Any]]] = None

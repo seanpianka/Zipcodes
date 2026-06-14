@@ -1,0 +1,18 @@
+{
+  "field_order": [
+    "zip_code",
+    "zip_code_type",
+    "active",
+    "city",
+    "acceptable_cities",
+    "unacceptable_cities",
+    "state",
+    "county",
+    "timezone",
+    "area_codes",
+    "world_region",
+    "country",
+    "lat",
+    "long"
+  ]
+}
