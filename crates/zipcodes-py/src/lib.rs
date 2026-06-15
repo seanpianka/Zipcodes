@@ -175,6 +175,7 @@ fn contains<'py>(
     }
 }
 
+/// Use `kwargs` to select for desired attributes from list of zipcode dicts
 #[pyfunction]
 #[pyo3(signature = (zips=None, **kwargs))]
 fn filter_by<'py>(
@@ -235,6 +236,8 @@ fn filter_by_coordinates<'py>(
     }
 }
 
+/// Calculate the great circle distance in miles between two points on the
+/// earth (specified in decimal degrees).
 #[pyfunction]
 fn haversine(lon1: f64, lat1: f64, lon2: f64, lat2: f64) -> f64 {
     zipcodes::haversine(lon1, lat1, lon2, lat2)

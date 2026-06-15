@@ -96,22 +96,17 @@ def filter_by_zip_code_type(zip_code_type, zips=None):
     return filter_by(zips, zip_code_type=zip_code_type)
 
 
-def haversine(lon1, lat1, lon2, lat2):
-    """
-    Calculate the great circle distance in miles between two points
-    on the earth (specified in decimal degrees)
-    """
-    return _zipcodes.haversine(lon1, lat1, lon2, lat2)
-
-
 def filter_by_coordinates(lat, long, radius_in_miles=10, zips=None):
     """List of zipcode dicts within `radius_in_miles` of (`lat`, `long`)."""
     return _zipcodes.filter_by_coordinates(lat, long, radius_in_miles, zips=zips)
 
 
-def filter_by(zips=None, **filters):
-    """Use `kwargs` to select for desired attributes from list of zipcode dicts"""
-    return _zipcodes.filter_by(zips, **filters)
+# Pure passthroughs: the native functions already have the desired signature
+# and docstring, so re-export them verbatim rather than wrapping. (The wrappers
+# above add Python-only behavior — a type guard, a default arg, or caching —
+# and so are kept.)
+filter_by = _zipcodes.filter_by
+haversine = _zipcodes.haversine
 
 
 def list_all(zips=None):
