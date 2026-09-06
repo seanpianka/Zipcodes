@@ -2,9 +2,9 @@
 
 [![Contributors](https://img.shields.io/github/contributors/seanpianka/zipcodes.svg)](https://github.com/seanpianka/zipcodes/graphs/contributors)
 
-Python: ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zipcodes) [![PyPI](https://img.shields.io/pypi/v/zipcodes)](https://pypi.org/project/zipcodes/) [![Python downloads (monthly)](https://static.pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes) [![Python downloads (all time)](https://static.pepy.tech/badge/zipcodes)](https://pepy.tech/project/zipcodes)
+Python: ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zipcodes) [![PyPI](https://img.shields.io/pypi/v/zipcodes)](https://pypi.org/project/zipcodes/) [![Python downloads (all time)](https://static.pepy.tech/badge/zipcodes)](https://pepy.tech/project/zipcodes) [![Python downloads (monthly)](https://static.pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes)
 
-Rust: [![Minimum Rust version](https://img.shields.io/crates/msrv/zipcodes)](https://crates.io/crates/zipcodes) [![crates.io](https://img.shields.io/crates/v/zipcodes)](https://crates.io/crates/zipcodes) [![Rust downloads (recent)](https://img.shields.io/crates/dr/zipcodes?label=downloads%20(recent))](https://crates.io/crates/zipcodes) [![Rust downloads (all time)](https://img.shields.io/crates/d/zipcodes?label=downloads%20(all%20time))](https://crates.io/crates/zipcodes)
+Rust: [![Minimum Rust version](https://img.shields.io/crates/msrv/zipcodes)](https://crates.io/crates/zipcodes) [![crates.io](https://img.shields.io/crates/v/zipcodes)](https://crates.io/crates/zipcodes) [![Rust downloads (all time)](https://img.shields.io/crates/d/zipcodes?label=downloads%20(all%20time))](https://crates.io/crates/zipcodes) [![Rust downloads (recent)](https://img.shields.io/crates/dr/zipcodes?label=downloads%20(recent))](https://crates.io/crates/zipcodes)
 
 Zipcodes is a simple library for querying U.S. zipcodes. No SQLite, no
 network, no runtime data files — the full dataset is embedded in the package.
