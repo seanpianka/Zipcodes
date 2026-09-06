@@ -1,10 +1,11 @@
 # Zipcodes
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zipcodes)
-[![PyPI](https://img.shields.io/pypi/v/zipcodes)](https://pypi.org/project/zipcodes/)
-[![crates.io](https://img.shields.io/crates/v/zipcodes)](https://crates.io/crates/zipcodes)
-[![Downloads](https://static.pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes)
 [![Contributors](https://img.shields.io/github/contributors/seanpianka/zipcodes.svg)](https://github.com/seanpianka/zipcodes/graphs/contributors)
+
+Python: [![PyPI](https://img.shields.io/pypi/v/zipcodes)](https://pypi.org/project/zipcodes/) [![Python downloads (monthly)](https://static.pepy.tech/badge/zipcodes/month)](https://pepy.tech/project/zipcodes) [![Python downloads (all time)](https://static.pepy.tech/badge/zipcodes)](https://pepy.tech/project/zipcodes)
+
+Rust: [![crates.io](https://img.shields.io/crates/v/zipcodes)](https://crates.io/crates/zipcodes) [![Rust downloads (recent)](https://img.shields.io/crates/dr/zipcodes?label=downloads%20(recent))](https://crates.io/crates/zipcodes) [![Rust downloads (all time)](https://img.shields.io/crates/d/zipcodes?label=downloads%20(all%20time))](https://crates.io/crates/zipcodes)
 
 Zipcodes is a simple library for querying U.S. zipcodes. No SQLite, no
 network, no runtime data files — the full dataset is embedded in the package.
@@ -136,6 +137,12 @@ $ python scripts/update_zipcode_dataset.py \
 ```
 
 ## Tests
+
+[CI](https://github.com/seanpianka/Zipcodes/actions/workflows/ci.yml) runs Rust
+checks and Python tests on pushes to `master` and pull requests. Rust API docs
+are built automatically on [docs.rs](https://docs.rs/zipcodes) after each crate
+release; this README is published to [PyPI](https://pypi.org/project/zipcodes/)
+with each Python release.
 
 The tests are defined in a declarative, table-based format that generates test
 cases.
