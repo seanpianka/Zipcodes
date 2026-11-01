@@ -121,14 +121,14 @@ automatically.
 To rebuild the dataset manually:
 
 ```shell script
-$ pip install xlrd
+$ pip install -r scripts/requirements.txt
 $ curl -fsSL https://download.geonames.org/export/zip/US.zip -o /tmp/geonames_us.zip
-$ # download the .xls linked from https://postalpro.usps.com/ZIP_Locale_Detail
+$ # download the .xlsx linked from https://postalpro.usps.com/ZIP_Locale_Detail
 $ python scripts/update_zipcode_dataset.py \
     --base scripts/data/zip_code_database.csv \
     --gps scripts/data/zip-codes-database-FREE.csv \
     --geonames-zip /tmp/geonames_us.zip \
-    --usps-xls /tmp/usps_zip_locale.xls \
+    --usps-file /tmp/usps_zip_locale.xlsx \
     --output-bz2 crates/zipcodes/src/zips.json.bz2 \
     --summary-output /tmp/change_summary.json
 ```

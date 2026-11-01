@@ -18,15 +18,15 @@ Usage:
     --base scripts/data/zip_code_database.csv \
     --gps scripts/data/zip-codes-database-FREE.csv \
     --fetch-geonames --geonames-zip /tmp/geonames_us.zip \
-    --fetch-usps --usps-xls /tmp/usps_zip_locale.xls \
+    --fetch-usps --usps-file /tmp/usps_zip_locale.xlsx \
     --output-bz2 crates/zipcodes/src/zips.json.bz2 \
     --summary-output /tmp/change_summary.json
 
 The ``--fetch-*`` flags download GeoNames/USPS to the given paths first; omit
 them to run offline against pre-downloaded files.
 
-Requires: ``pip install -r scripts/requirements.txt`` (xlrd — the USPS file is
-the legacy binary .xls format). Downloads use only the stdlib.
+Requires: ``pip install -r scripts/requirements.txt`` (openpyxl, for the USPS
+.xlsx). Downloads use only the stdlib.
 """
 
 import argparse
@@ -40,7 +40,7 @@ import sys
 import urllib.request
 import zipfile
 
-import xlrd
+import openpyxl
 
 # Canonical key order of records in zips.json. The crate's `zipcodes::FIELD_ORDER`
 # is the single source of truth; `crates/zipcodes/examples/gen_schema.rs` emits it
@@ -72,13 +72,19 @@ SCHEMA = {
 # County-equivalent names from GeoNames that must not get " County" appended.
 COUNTY_SUFFIXES = ("county", "parish", "borough", "census area", "municipality", "municipio", "city", "island")
 
-# USPS sheets to scan for ZIPs, in priority order, with the column holding the
-# ZIP and the zip_code_type to assign to records synthesized from that sheet.
+# USPS sheets to scan for ZIPs, in priority order, with the zip_code_type to
+# assign to records synthesized from that sheet. Since the October 2026 .xlsx
+# (which replaced the .xls and its ZIP_DETAIL/Unique_ZIP_DETAIL sheets), every
+# sheet names its columns DELIVERY ZIPCODE, LOCALE NAME and PHYSICAL STATE,
+# though Unique and Other stack each name across several header rows.
 USPS_SHEETS = [
-    ("ZIP_DETAIL", "DELIVERY ZIPCODE", "STANDARD"),
-    ("Unique_ZIP_DETAIL", "ZIP CODE", "UNIQUE"),
-    ("Other", "ZIP CODE", "PO BOX"),
+    ("ZIP_Locale", "STANDARD"),
+    ("Unique", "UNIQUE"),
+    ("Other", "PO BOX"),
 ]
+USPS_ZIP_COLUMN = "DELIVERY ZIPCODE"
+USPS_LOCALE_COLUMN = "LOCALE NAME"
+USPS_STATE_COLUMN = "PHYSICAL STATE"
 
 MILITARY_LOCALES = {"APO", "DPO", "FPO"}
 
@@ -111,12 +117,14 @@ def download_geonames(output_path):
 
 
 def download_usps(output_path):
-    """Scrape the USPS ZIP Locale Detail page for the .xls link and download it."""
+    """Scrape the USPS ZIP Locale Detail page for the .xlsx link and download it."""
     headers = {"User-Agent": "Mozilla/5.0"}
     page = fetch(USPS_PAGE, timeout=60, headers=headers).decode("utf-8", errors="replace")
-    match = re.search(r'href="(/mnt/glusterfs/[^"]+ZIP_Locale_Detail\.xls)"', page)
+    # Case-insensitive: the October 2026 switch from ZIP_Locale_Detail.xls to
+    # Zip_Locale_Detail.xlsx also changed the file name's case.
+    match = re.search(r'href="(/mnt/glusterfs/[^"]+ZIP_Locale_Detail\.xlsx)"', page, re.IGNORECASE)
     if not match:
-        sys.exit(f"FATAL: no ZIP_Locale_Detail.xls link found on {USPS_PAGE}; has the page layout changed?")
+        sys.exit(f"FATAL: no ZIP_Locale_Detail.xlsx link found on {USPS_PAGE}; has the page layout changed?")
     url = "https://postalpro.usps.com" + match.group(1)
     print(f"Downloading {url}")
     with open(output_path, "wb") as f:
@@ -182,22 +190,69 @@ def load_geonames(zip_path):
     return geo
 
 
-def load_usps(xls_path):
-    """Parse the USPS ZIP Locale Detail .xls -> {zip: {city, state, type}}."""
-    book = xlrd.open_workbook(xls_path)
+def cell_text(value):
+    """Spreadsheet cell -> stripped string; whole-number cells lose any '.0'."""
+    if value is None:
+        return ""
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    return str(value).strip()
+
+
+def usps_zip(value):
+    """A USPS ZIP cell -> 5-digit string, restoring zeros a numeric cell drops."""
+    text = cell_text(value)
+    return text.zfill(5) if text.isdigit() else text
+
+
+def split_usps_header(rows, sheet_name):
+    """Return (column names, data rows) for a USPS sheet.
+
+    The header ends at the first row naming LOCALE NAME; when it spans several
+    rows, each column's name is its non-empty header cells joined top to bottom
+    (DELIVERY over ZIPCODE -> "DELIVERY ZIPCODE").
+    """
+    for end, row in enumerate(rows[:10]):
+        if USPS_LOCALE_COLUMN in (cell_text(v) for v in row):
+            break
+    else:
+        sys.exit(f"FATAL: USPS sheet {sheet_name!r} has no {USPS_LOCALE_COLUMN!r} header row; has the layout changed?")
+    width = max(len(row) for row in rows[: end + 1])
+    header = [
+        " ".join(text for row in rows[: end + 1] if c < len(row) and (text := cell_text(row[c])))
+        for c in range(width)
+    ]
+    return header, rows[end + 1 :]
+
+
+def load_usps(path):
+    """Parse the USPS ZIP Locale Detail .xlsx -> {zip: {city, state, type}}."""
+    if not zipfile.is_zipfile(path):
+        sys.exit(f"FATAL: {path} is not an .xlsx workbook; corrupt download or an error page?")
+    book = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    missing = [name for name, _ in USPS_SHEETS if name not in book.sheetnames]
+    if missing:
+        sys.exit(f"FATAL: USPS workbook lacks sheets {missing}; found {book.sheetnames}. Has the layout changed?")
     usps = {}
-    for sheet_name, zip_column, zip_type in USPS_SHEETS:
-        sheet = book.sheet_by_name(sheet_name)
-        header = [str(sheet.cell_value(0, c)).strip() for c in range(sheet.ncols)]
-        zip_idx = header.index(zip_column)
-        locale_idx = header.index("LOCALE NAME")
-        state_idx = header.index("PHYSICAL STATE")
-        for r in range(1, sheet.nrows):
-            zip_code = str(sheet.cell_value(r, zip_idx)).strip()
+    for sheet_name, zip_type in USPS_SHEETS:
+        rows = list(book[sheet_name].iter_rows(values_only=True))
+        header, data = split_usps_header(rows, sheet_name)
+        try:
+            zip_idx = header.index(USPS_ZIP_COLUMN)
+            locale_idx = header.index(USPS_LOCALE_COLUMN)
+            state_idx = header.index(USPS_STATE_COLUMN)
+        except ValueError as e:
+            sys.exit(f"FATAL: USPS sheet {sheet_name!r} header {header} is missing a column ({e})")
+        for row in data:
+            if not any(v not in (None, "") for v in row):
+                continue  # trailing blank rows are common in .xlsx exports
+            zip_code = usps_zip(row[zip_idx])
+            if not (len(zip_code) == 5 and zip_code.isdigit()):
+                sys.exit(f"FATAL: USPS sheet {sheet_name!r} has non-ZIP {row[zip_idx]!r} in {USPS_ZIP_COLUMN}")
             if zip_code not in usps:
                 usps[zip_code] = {
-                    "city": str(sheet.cell_value(r, locale_idx)).strip(),
-                    "state": str(sheet.cell_value(r, state_idx)).strip(),
+                    "city": cell_text(row[locale_idx]),
+                    "state": cell_text(row[state_idx]),
                     "type": zip_type,
                 }
     if len(usps) < MIN_USPS_ZIPS:
@@ -414,9 +469,11 @@ def main():
     parser.add_argument("--base", required=True, help="committed unitedstateszipcodes.org CSV")
     parser.add_argument("--gps", default="scripts/data/zip-codes-database-FREE.csv", help="committed zip-codes.com GPS overlay CSV")
     parser.add_argument("--geonames-zip", required=True, help="GeoNames US.zip (download.geonames.org/export/zip/US.zip)")
-    parser.add_argument("--usps-xls", required=True, help="USPS ZIP Locale Detail .xls (postalpro.usps.com/ZIP_Locale_Detail)")
+    parser.add_argument(
+        "--usps-file", required=True, help="USPS ZIP Locale Detail .xlsx (postalpro.usps.com/ZIP_Locale_Detail)"
+    )
     parser.add_argument("--fetch-geonames", action="store_true", help="download GeoNames US.zip to --geonames-zip first")
-    parser.add_argument("--fetch-usps", action="store_true", help="download the USPS ZIP Locale Detail .xls to --usps-xls first")
+    parser.add_argument("--fetch-usps", action="store_true", help="download the USPS ZIP Locale Detail .xlsx to --usps-file first")
     parser.add_argument("--output-bz2", required=True, help="path of the embedded database to diff against and overwrite")
     parser.add_argument("--summary-output", required=True, help="where to write the JSON change summary")
     parser.add_argument(
@@ -429,11 +486,11 @@ def main():
     if args.fetch_geonames:
         download_geonames(args.geonames_zip)
     if args.fetch_usps:
-        download_usps(args.usps_xls)
+        download_usps(args.usps_file)
 
     previous = load_previous(args.output_bz2)
     geo = load_geonames(args.geonames_zip)
-    usps = load_usps(args.usps_xls)
+    usps = load_usps(args.usps_file)
 
     records = load_base(args.base)
     print(f"base records: {len(records)}")

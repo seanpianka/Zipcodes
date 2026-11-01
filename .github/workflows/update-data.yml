@@ -46,7 +46,7 @@ jobs:
             --base scripts/data/zip_code_database.csv \
             --gps scripts/data/zip-codes-database-FREE.csv \
             --fetch-geonames --geonames-zip /tmp/geonames_us.zip \
-            --fetch-usps --usps-xls /tmp/usps_zip_locale.xls \
+            --fetch-usps --usps-file /tmp/usps_zip_locale.xlsx \
             --output-bz2 crates/zipcodes/src/zips.json.bz2 \
             --summary-output /tmp/change_summary.json
 
